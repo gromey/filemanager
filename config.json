@@ -1,0 +1,28 @@
+[
+  {
+    "mode": 1,
+    "path1": "D:\\Тест1",
+    "path2": "D:\\Тест2",
+    "mask": {
+      "on": true,
+      "ext": [
+        ".rar"
+      ],
+      "include": false,
+      "verbose": true
+    }
+  },
+  {
+    "mode": 1,
+    "path1": "D:\\Тест1",
+    "path2": "D:\\Тест2",
+    "mask": {
+      "on": true,
+      "ext": [
+        ".docx"
+      ],
+      "include": false,
+      "verbose": true
+    }
+  }
+]
