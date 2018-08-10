@@ -1,8 +1,12 @@
 [
   {
     "mode": 1,
-    "path1": "D:\\Тест1",
-    "path2": "D:\\Тест2",
+    "path1": "D:\\test1",
+    "path2": "D:\\test2",
+    "paths": [
+      "D:\\test1",
+      "D:\\test2"
+    ],
     "mask": {
       "on": true,
       "ext": [
@@ -14,8 +18,12 @@
   },
   {
     "mode": 1,
-    "path1": "D:\\Тест1",
-    "path2": "D:\\Тест2",
+    "path1": "D:\\test1",
+    "path2": "D:\\test2",
+    "paths": [
+      "D:\\test1",
+      "D:\\test2"
+    ],
     "mask": {
       "on": true,
       "ext": [

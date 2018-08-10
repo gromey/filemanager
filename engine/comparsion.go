@@ -76,7 +76,7 @@ func Compare(m1, m2 map[string]FI, abs1, abs2 string) ([]Action, []Action) {
 		if fi2, ok := m2[rel]; ok && fi1.Time.Equal(fi2.Time) {
 			match = append(match, &Base{
 				Fi:  fi1,
-				Dst: filepath.Join(abs2, rel),
+				Dst: fi2.Abs,
 			})
 		}
 		if fi2, ok := m2[rel]; !ok {

@@ -23,7 +23,6 @@ func Sync(c Config) error {
 		ex1, in1 = in1, ex1
 		ex2, in2 = in2, ex2
 	}
-	//ex1 = ex1[:len(ex1):len(ex1)] // По этому разобраться
 	m1 := engine.Convert(in1)
 	m2 := engine.Convert(in2)
 	if c.Mask.Verbose {
