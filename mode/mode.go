@@ -46,10 +46,10 @@ func Run(config string) error {
 				return err
 			}
 		case Duplicate:
-			//err := Dupl(config)
-			//if err != nil {
-			//	return err
-			//}
+			err := Dupl(config)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
