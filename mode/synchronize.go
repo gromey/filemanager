@@ -23,8 +23,6 @@ func Sync(c Config) error {
 		ex1, in1 = in1, ex1
 		ex2, in2 = in2, ex2
 	}
-	m1 := engine.Convert(in1)
-	m2 := engine.Convert(in2)
 	if c.Mask.Verbose {
 		excluded := append(ex1, ex2...)
 		sort.Slice(excluded, func(i, j int) bool {
@@ -34,7 +32,7 @@ func Sync(c Config) error {
 			fmt.Printf("%q\t%v\t%q\t%q\n", fi.Abs, fi.Size, fi.Time, "the file is excluded by a mask")
 		}
 	}
-	match, dfr := engine.Compare(m1, m2, c.Path1, c.Path2)
+	match, dfr := engine.Compare(in1, in2, c.Path1, c.Path2)
 	for _, action := range match {
 		fmt.Println(action.Description())
 	}

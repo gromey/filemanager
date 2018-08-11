@@ -69,7 +69,9 @@ func (r *Replace) Description() string {
 
 }
 
-func Compare(m1, m2 map[string]FI, abs1, abs2 string) ([]Action, []Action) {
+func Compare(arr1, arr2 []FI, abs1, abs2 string) ([]Action, []Action) {
+	m1 := Convert(arr1)
+	m2 := Convert(arr2)
 	var match []Action
 	var dfr []Action
 	for rel, fi1 := range m1 {
