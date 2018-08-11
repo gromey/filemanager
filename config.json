@@ -8,7 +8,7 @@
       "D:\\test2"
     ],
     "mask": {
-      "on": true,
+      "on": false,
       "ext": [
         ".rar"
       ],
@@ -17,7 +17,7 @@
     }
   },
   {
-    "mode": 1,
+    "mode": 2,
     "path1": "D:\\test1",
     "path2": "D:\\test2",
     "paths": [
@@ -25,7 +25,7 @@
       "D:\\test2"
     ],
     "mask": {
-      "on": true,
+      "on": false,
       "ext": [
         ".docx"
       ],

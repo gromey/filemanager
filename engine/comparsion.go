@@ -72,8 +72,7 @@ func (r *Replace) Description() string {
 func CompareSync(arr1, arr2 []FI, abs1, abs2 string) ([]Action, []Action) {
 	m1 := Convert(arr1)
 	m2 := Convert(arr2)
-	var match []Action
-	var dfr []Action
+	var match, dfr []Action
 	for rel, fi1 := range m1 {
 		if fi2, ok := m2[rel]; ok && fi1.Time.Equal(fi2.Time) {
 			match = append(match, &Base{
@@ -118,4 +117,20 @@ func Convert(arr []FI) map[string]FI {
 		m[filepath.Join(fi.Rel, fi.Name)] = fi
 	}
 	return m
+}
+
+func CompareDupl(arr []FI) []Action {
+	m := make(map[string]FI)
+	var match []Action
+	for _, fi := range arr {
+		if fiM, ok := m[fi.Name]; ok {
+			match = append(match, &Base{
+				Fi:  fi,
+				Dst: fiM.Abs,
+			})
+		} else {
+			m[fi.Name] = fi
+		}
+	}
+	return match
 }
