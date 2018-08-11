@@ -32,7 +32,7 @@ func Sync(c Config) error {
 			fmt.Printf("%q\t%v\t%q\t%q\n", fi.Abs, fi.Size, fi.Time, "the file is excluded by a mask")
 		}
 	}
-	match, dfr := engine.Compare(in1, in2, c.Path1, c.Path2)
+	match, dfr := engine.CompareSync(in1, in2, c.Path1, c.Path2)
 	for _, action := range match {
 		fmt.Println(action.Description())
 	}

@@ -75,11 +75,3 @@ func MaskFilter(name string, mask []string) bool {
 	}
 	return false
 }
-
-func Convert(arr1 []FI) map[string]FI {
-	m := make(map[string]FI)
-	for _, fi := range arr1 {
-		m[filepath.Join(fi.Rel, fi.Name)] = fi
-	}
-	return m
-}
