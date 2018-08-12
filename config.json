@@ -1,6 +1,6 @@
 [
   {
-    "mode": 1,
+    "mode": 0,
     "path1": "D:\\test1",
     "path2": "D:\\test2",
     "paths": [
@@ -21,11 +21,10 @@
     "path1": "D:\\test1",
     "path2": "D:\\test2",
     "paths": [
-      "D:\\test1",
-      "D:\\test2"
+      "E:\\1 Фото"
     ],
     "mask": {
-      "on": false,
+      "on": true,
       "ext": [
         ".docx"
       ],

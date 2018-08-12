@@ -34,7 +34,7 @@ func readDir(root, rel string, mask []string) ([]FI, []FI, error) {
 	var insideMask []FI
 	var outsideMask []FI
 	for _, file := range files {
-		if MaskFilter(file.Name(), mask) == true {
+		if maskFilter(file.Name(), mask) == true {
 			insideMask = append(insideMask, FI{
 				Abs:  filepath.Join(root, file.Name()),
 				Rel:  rel,
@@ -67,7 +67,7 @@ func readDir(root, rel string, mask []string) ([]FI, []FI, error) {
 	return insideMask, outsideMask, nil
 }
 
-func MaskFilter(name string, mask []string) bool {
+func maskFilter(name string, mask []string) bool {
 	for _, ext := range mask {
 		if strings.HasSuffix(name, ext) {
 			return true
