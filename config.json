@@ -24,11 +24,11 @@
       "E:\\1 Фото"
     ],
     "mask": {
-      "on": true,
+      "on": false,
       "ext": [
-        ".docx"
+        ".jpg"
       ],
-      "include": false,
+      "include": true,
       "verbose": true
     }
   }

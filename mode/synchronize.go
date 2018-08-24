@@ -19,11 +19,11 @@ func Sync(c Config) error {
 	if err != nil {
 		return err
 	}
-	if c.Mask.Include {
+	if c.Mask.On && c.Mask.Include {
 		ex1, in1 = in1, ex1
 		ex2, in2 = in2, ex2
 	}
-	if c.Mask.Verbose {
+	if c.Mask.On && c.Mask.Verbose {
 		excluded := append(ex1, ex2...)
 		sort.Slice(excluded, func(i, j int) bool {
 			return excluded[i].Abs < excluded[j].Abs

@@ -55,7 +55,7 @@ func (c *Base) Apply() error {
 
 func (c *Base) Description() string {
 	return fmt.Sprintf("%q\t%v\t%q\t%v\t%q",
-		c.Fi.Abs, "match", c.Dst, c.Fi.Size, c.Fi.Time)
+		c.Fi.Abs, "match", c.Dst, c.Fi.Size, c.Fi.Hash)
 }
 
 func (c *Create) Description() string {
@@ -123,13 +123,15 @@ func CompareDupl(arr []FI) []Action {
 	m := make(map[string]FI)
 	var match []Action
 	for _, fi := range arr {
-		if fiM, ok := m[fi.Name]; ok && fi.Size == fiM.Size {
+		//if fiM, ok := m[fi.Name]; ok && fi.Size == fiM.Size {
+		if fiM, ok := m[fi.Hash]; ok {
 			match = append(match, &Base{
 				Fi:  fi,
 				Dst: fiM.Abs,
 			})
 		} else {
-			m[fi.Name] = fi
+			//m[fi.Name] = fi
+			m[fi.Hash] = fi
 		}
 	}
 	return match

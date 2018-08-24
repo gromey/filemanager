@@ -20,10 +20,10 @@ func Dupl(c Config) error {
 		excl = append(excl, ex...)
 		incl = append(incl, in...)
 	}
-	if c.Mask.Include {
+	if c.Mask.On && c.Mask.Include {
 		excl, incl = incl, excl
 	}
-	if c.Mask.Verbose {
+	if c.Mask.On && c.Mask.Verbose {
 		sort.Slice(excl, func(i, j int) bool {
 			return excl[i].Abs < excl[j].Abs
 		})
