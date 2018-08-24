@@ -7,15 +7,17 @@ import (
 )
 
 func Sync(c Config) error {
+	path1 := c.Paths[0]
+	path2 := c.Paths[1]
 	var ext []string
 	if c.Mask.On {
 		ext = c.Mask.Ext
 	}
-	ex1, in1, err := engine.ReadDir(c.Path1, ext)
+	ex1, in1, err := engine.ReadDir(path1, ext)
 	if err != nil {
 		return err
 	}
-	ex2, in2, err := engine.ReadDir(c.Path2, ext)
+	ex2, in2, err := engine.ReadDir(path2, ext)
 	if err != nil {
 		return err
 	}
@@ -32,7 +34,7 @@ func Sync(c Config) error {
 			fmt.Printf("%q\t%v\t%q\t%q\n", fi.Abs, fi.Size, fi.Time, "the file is excluded by a mask")
 		}
 	}
-	match, dfr := engine.CompareSync(in1, in2, c.Path1, c.Path2)
+	match, dfr := engine.CompareSync(in1, in2, path1, path2)
 	for _, action := range match {
 		fmt.Println(action.Description())
 	}

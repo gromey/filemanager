@@ -54,8 +54,8 @@ func (c *Base) Apply() error {
 }
 
 func (c *Base) Description() string {
-	return fmt.Sprintf("%q\t%v\t%q\t%v\t%q",
-		c.Fi.Abs, "match", c.Dst, c.Fi.Size, c.Fi.Hash)
+	return fmt.Sprintf("%q\t%v\t%q\t%v\t%q\t%q",
+		c.Fi.Abs, "match", c.Dst, c.Fi.Size, c.Fi.Time, c.Fi.Hash)
 }
 
 func (c *Create) Description() string {

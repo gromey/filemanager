@@ -9,8 +9,6 @@ import (
 
 type Config struct {
 	Mode  Mode     `json:"mode"`
-	Path1 string   `json:"path1"`
-	Path2 string   `json:"path2"`
 	Paths []string `json:"paths"`
 	Mask  struct {
 		On      bool     `json:"on"`

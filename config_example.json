@@ -1,9 +1,9 @@
 [
   {
     "mode": 1,
-    "path1": "D:\\folder1",
-    "path2": "D:\\folder2",
     "paths": [
+      "D:\\folder1",
+      "D:\\folder2"
     ],
     "mask": {
       "on": false,
@@ -16,8 +16,6 @@
   },
   {
     "mode": 2,
-    "path1": "",
-    "path2": "",
     "paths": [
       "E:\\folder"
     ],
