@@ -123,14 +123,12 @@ func CompareDupl(arr []FI) []Action {
 	m := make(map[string]FI)
 	var match []Action
 	for _, fi := range arr {
-		//if fiM, ok := m[fi.Name]; ok && fi.Size == fiM.Size {
 		if fiM, ok := m[fi.Hash]; ok {
 			match = append(match, &Base{
 				Fi:  fi,
 				Dst: fiM.Abs,
 			})
 		} else {
-			//m[fi.Name] = fi
 			m[fi.Hash] = fi
 		}
 	}

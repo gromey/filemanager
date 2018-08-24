@@ -1,11 +1,9 @@
 [
   {
-    "mode": 0,
-    "path1": "D:\\test1",
-    "path2": "D:\\test2",
+    "mode": 1,
+    "path1": "D:\\folder1",
+    "path2": "D:\\folder2",
     "paths": [
-      "D:\\test1",
-      "D:\\test2"
     ],
     "mask": {
       "on": false,
@@ -18,18 +16,18 @@
   },
   {
     "mode": 2,
-    "path1": "D:\\test1",
-    "path2": "D:\\test2",
+    "path1": "",
+    "path2": "",
     "paths": [
-      "E:\\1 Фото"
+      "E:\\folder"
     ],
     "mask": {
-      "on": false,
+      "on": true,
       "ext": [
         ".jpg"
       ],
       "include": true,
-      "verbose": true
+      "verbose": false
     }
   }
 ]
