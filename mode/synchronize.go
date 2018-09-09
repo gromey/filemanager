@@ -1,15 +1,20 @@
 package mode
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"syncdata/engine"
 )
 
+var path1 string
+var path2 string
+var ext []string
+
 func Sync(c Config) error {
-	path1 := c.Paths[0]
-	path2 := c.Paths[1]
-	var ext []string
+	path1 = c.Paths[0]
+	path2 = c.Paths[1]
 	if c.Mask.On {
 		ext = c.Mask.Ext
 	}
@@ -21,9 +26,11 @@ func Sync(c Config) error {
 	if err != nil {
 		return err
 	}
+	include := true
 	if c.Mask.On && c.Mask.Include {
 		ex1, in1 = in1, ex1
 		ex2, in2 = in2, ex2
+		include = false
 	}
 	if c.Mask.On && c.Mask.Verbose {
 		excluded := append(ex1, ex2...)
@@ -56,8 +63,29 @@ func Sync(c Config) error {
 				return err
 			}
 		}
+		fmt.Println("Synchronize is done\n")
+		writeResult(include)
 	} else {
 		fmt.Println("Synchronize canceled by user\n")
 	}
+	return nil
+}
+
+func writeResult(include bool) error {
+	fmt.Println("Write resutl file.")
+	ex, in, err := engine.ReadDir(path1, ext)
+	if err != nil {
+		return err
+	}
+	if include {
+		ex, in = in, ex
+	}
+	w, err := os.Create("result.json")
+	if err != nil {
+		return fmt.Errorf("could not create file result.json: %v", err)
+	}
+	defer w.Close()
+	json.NewEncoder(w).Encode(ex)
+	fmt.Println("Done.")
 	return nil
 }
