@@ -26,11 +26,11 @@ func Sync(c Config) error {
 	if err != nil {
 		return err
 	}
-	include := true
+	include := false
 	if c.Mask.On && c.Mask.Include {
 		ex1, in1 = in1, ex1
 		ex2, in2 = in2, ex2
-		include = false
+		include = true
 	}
 	if c.Mask.On && c.Mask.Verbose {
 		excluded := append(ex1, ex2...)
@@ -40,6 +40,13 @@ func Sync(c Config) error {
 		for _, fi := range excluded {
 			fmt.Printf("%q\t%v\t%q\t%q\n", fi.Abs, fi.Size, fi.Time, "the file is excluded by a mask")
 		}
+	}
+	arr, err := readResult()
+	if err != nil {
+		return err
+	}
+	for _, fi := range arr {
+		fmt.Printf("%q\t%v\t%q\t%q\n", fi.Abs, fi.Size, fi.Time, "read")
 	}
 	match, dfr := engine.CompareSync(in1, in2, path1, path2)
 	for _, action := range match {
@@ -71,6 +78,18 @@ func Sync(c Config) error {
 	return nil
 }
 
+func readResult() ([]engine.FI, error) {
+	var arr []engine.FI
+	r, err := os.Open("result.json")
+	if err != nil {
+		return nil, fmt.Errorf("could not open file result.json: %v", err)
+	}
+	defer r.Close()
+	dec := json.NewDecoder(r)
+	dec.Decode(&arr)
+	return arr, nil
+}
+
 func writeResult(include bool) error {
 	fmt.Println("Write resutl file.")
 	ex, in, err := engine.ReadDir(path1, ext)
@@ -85,7 +104,7 @@ func writeResult(include bool) error {
 		return fmt.Errorf("could not create file result.json: %v", err)
 	}
 	defer w.Close()
-	json.NewEncoder(w).Encode(ex)
+	json.NewEncoder(w).Encode(in)
 	fmt.Println("Done.")
 	return nil
 }
