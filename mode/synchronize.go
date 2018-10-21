@@ -43,12 +43,14 @@ func Sync(c Config) error {
 	}
 	arr, err := readResult()
 	if err != nil {
-		return err
+		fmt.Println("The first synchronization will take place\n")
 	}
 	for _, fi := range arr {
 		fmt.Printf("%q\t%v\t%q\t%q\n", fi.Abs, fi.Size, fi.Time, "read")
 	}
-	match, dfr := engine.CompareSync(in1, in2, path1, path2)
+	res1 := engine.CompareSync(arr, in1, path2)
+	res2 := engine.CompareSync(arr, in2, path1)
+	match, dfr := engine.CompareResolution(res1, res2)
 	for _, action := range match {
 		fmt.Println(action.Description())
 	}
