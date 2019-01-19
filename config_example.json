@@ -1,11 +1,9 @@
 [
   {
-    "mode": 0,
-    "path1": "D:\\test1",
-    "path2": "D:\\test2",
+    "mode": 1,
     "paths": [
-      "D:\\test1",
-      "D:\\test2"
+      "D:\\folder1",
+      "D:\\folder2"
     ],
     "mask": {
       "on": false,
@@ -18,18 +16,16 @@
   },
   {
     "mode": 2,
-    "path1": "D:\\test1",
-    "path2": "D:\\test2",
     "paths": [
-      "E:\\1 Фото"
+      "E:\\folder"
     ],
     "mask": {
       "on": true,
       "ext": [
-        ".docx"
+        ".jpg"
       ],
-      "include": false,
-      "verbose": true
+      "include": true,
+      "verbose": false
     }
   }
 ]

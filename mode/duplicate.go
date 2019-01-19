@@ -20,10 +20,10 @@ func Dupl(c Config) error {
 		excl = append(excl, ex...)
 		incl = append(incl, in...)
 	}
-	if c.Mask.Include {
+	if c.Mask.On && c.Mask.Include {
 		excl, incl = incl, excl
 	}
-	if c.Mask.Verbose {
+	if c.Mask.On && c.Mask.Verbose {
 		sort.Slice(excl, func(i, j int) bool {
 			return excl[i].Abs < excl[j].Abs
 		})
@@ -31,13 +31,13 @@ func Dupl(c Config) error {
 			fmt.Printf("%q\t%v\t%q\t%q\n", fi.Abs, fi.Size, fi.Time, "the file is excluded by a mask")
 		}
 	}
-	match := engine.CompareDupl(incl)
+	match := engine.CompareDpl(incl)
 	if len(match) == 0 {
 		fmt.Println("No match\n")
 		return nil
 	}
 	for _, action := range match {
-		fmt.Println(action.Description())
+		fmt.Println(action)
 	}
 	return nil
 }
