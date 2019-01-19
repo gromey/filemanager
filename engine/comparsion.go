@@ -12,21 +12,21 @@ type Base struct {
 	FiDst FI
 }
 
-type Crt struct {
+type Create struct {
 	Base
 }
 
-type Dlt struct {
+type Delete struct {
 	Base
 }
 
-type Rpl struct {
+type Replace struct {
 	Base
 }
 
 type Action interface {
 	Apply() error
-	Description() string
+	String() string
 }
 
 func (b *Base) Apply() error {
@@ -48,16 +48,20 @@ func (b *Base) Apply() error {
 	}
 	defer w.Close()
 	if _, err = io.Copy(w, s); err != nil {
+		_ = os.Remove(b.FiDst.Abs)
 		return fmt.Errorf("could not copy file %v: %v", b.FiDst.Abs, err)
 	}
-	w.Close()
+	err = w.Close()
+	if err != nil {
+		return fmt.Errorf("could not close file %v: %v", b.FiDst.Abs, err)
+	}
 	if err = os.Chtimes(b.FiDst.Abs, b.FiSrc.Time, b.FiSrc.Time); err != nil {
 		return fmt.Errorf("could not change Time %v: %v", b.FiDst.Abs, err)
 	}
 	return nil
 }
 
-func (d *Dlt) Apply() error {
+func (d *Delete) Apply() error {
 	err := os.Remove(d.FiDst.Abs)
 	if err != nil {
 		return fmt.Errorf("could not delete file %v: %v", d.FiDst.Abs, err)
@@ -65,23 +69,23 @@ func (d *Dlt) Apply() error {
 	return nil
 }
 
-func (b *Base) Description() string {
-	return fmt.Sprintf("%q\t%v\t%q\n\t%v = %v\n\t%q = %q\n\t%q = %q",
-		b.FiSrc.Abs, "match", b.FiDst.Abs, b.FiSrc.Size, b.FiDst.Size,
-		b.FiSrc.Time, b.FiDst.Time, b.FiSrc.Hash, b.FiDst.Hash)
+func (b *Base) String() string {
+	return fmt.Sprintf("%q\t%v\t%q\n\t%v %v\n\t%v %q\n\t%v %q",
+		b.FiSrc.Abs, "match", b.FiDst.Abs, "Size", b.FiDst.Size,
+		"Time", b.FiDst.Time, "Hash", b.FiDst.Hash)
 }
 
-func (c *Crt) Description() string {
+func (c *Create) String() string {
 	return fmt.Sprintf("%q\t%v\t%q\t%q\t%q",
 		c.FiSrc.Name, c.FiSrc.Size, c.FiSrc.Time, "the file will be creating in", c.FiDst.Abs)
 }
 
-func (d *Dlt) Description() string {
+func (d *Delete) String() string {
 	return fmt.Sprintf("%q\t%v\t%q\t%q\t%q",
 		d.FiDst.Name, d.FiDst.Size, d.FiDst.Time, "the file will be deleting", d.FiDst.Abs)
 }
 
-func (r *Rpl) Description() string {
+func (r *Replace) String() string {
 	return fmt.Sprintf("%q\t%v\t%q\t%q\t%q",
 		r.FiSrc.Name, r.FiSrc.Size, r.FiSrc.Time, "the file will be replacing", r.FiDst.Abs)
 }
@@ -89,27 +93,27 @@ func (r *Rpl) Description() string {
 type Act int
 
 const (
-	Match = Act(iota)
-	Delete
-	Problem
-	Replace
-	Create
+	ActMatch = Act(iota)
+	ActDelete
+	ActProblem
+	ActReplace
+	ActCreate
 )
 
 func (a Act) String() string {
 	switch a {
-	case Match:
+	case ActMatch:
 		return "Match"
-	case Delete:
+	case ActDelete:
 		return "Delete"
-	case Problem:
+	case ActProblem:
 		return "Problem"
-	case Replace:
+	case ActReplace:
 		return "Replace"
-	case Create:
+	case ActCreate:
 		return "Create"
 	}
-	return ""
+	return "Unknown action"
 }
 
 type Resolution struct {
@@ -118,38 +122,40 @@ type Resolution struct {
 	Dst   string
 }
 
-func (r *Resolution) Description() string {
-	var d string
+func (r *Resolution) String() string {
+	var s string
 	switch r.Act {
-	case Match:
-		d = fmt.Sprintf("%v %v", r.FiSrc.Abs, "has not been changed")
-	case Delete:
-		d = fmt.Sprintf("%v has been deleted", r.FiSrc.Abs)
-	case Replace:
-		d = fmt.Sprintf("%v %v %q", r.FiSrc.Abs, "has been changed", r.FiSrc.Time)
-	case Problem:
-		d = fmt.Sprintf("%v has time earlier than the previous synchronization", r.FiSrc.Abs)
-	case Create:
-		d = fmt.Sprintf("%v %v %q", r.FiSrc.Abs, "was created, time", r.FiSrc.Time)
+	case ActMatch:
+		s = fmt.Sprintf("%v %v", r.FiSrc.Abs, "has not been changed")
+	case ActDelete:
+		s = fmt.Sprintf("%v has been deleted", r.FiSrc.Abs)
+	case ActReplace:
+		s = fmt.Sprintf("%v %v %q", r.FiSrc.Abs, "has been changed", r.FiSrc.Time)
+	case ActProblem:
+		s = fmt.Sprintf("%v has time earlier than the previous synchronization", r.FiSrc.Abs)
+	case ActCreate:
+		s = fmt.Sprintf("%v %v %q", r.FiSrc.Abs, "was created, time", r.FiSrc.Time)
+	default:
+		return "Unknown resolution"
 	}
-	return d
+	return s
 }
 
 func CompareSync(arr1, arr2 []FI, abs string) map[string]Resolution {
-	m1 := Convert(arr1)
-	m2 := Convert(arr2)
+	m1 := toMap(arr1)
+	m2 := toMap(arr2)
 	m := make(map[string]Resolution)
 	for rel, fi1 := range m1 {
 		if fi2, ok := m2[rel]; ok && fi1.Time.Equal(fi2.Time) {
 			m[rel] = Resolution{
-				Act:   Match,
+				Act:   ActMatch,
 				FiSrc: fi2,
 				Dst:   filepath.Join(abs, rel),
 			}
 		}
 		if fi2, ok := m2[rel]; !ok {
 			m[rel] = Resolution{
-				Act:   Delete,
+				Act:   ActDelete,
 				FiSrc: fi1,
 				Dst:   filepath.Join(abs, rel),
 			}
@@ -157,13 +163,13 @@ func CompareSync(arr1, arr2 []FI, abs string) map[string]Resolution {
 			switch {
 			case fi1.Time.After(fi2.Time):
 				m[rel] = Resolution{
-					Act:   Problem,
+					Act:   ActProblem,
 					FiSrc: fi2,
 					Dst:   filepath.Join(abs, rel),
 				}
 			case fi2.Time.After(fi1.Time):
 				m[rel] = Resolution{
-					Act:   Replace,
+					Act:   ActReplace,
 					FiSrc: fi2,
 					Dst:   filepath.Join(abs, rel),
 				}
@@ -173,7 +179,7 @@ func CompareSync(arr1, arr2 []FI, abs string) map[string]Resolution {
 	for rel, fi2 := range m2 {
 		if _, ok := m1[rel]; !ok {
 			m[rel] = Resolution{
-				Act:   Create,
+				Act:   ActCreate,
 				FiSrc: fi2,
 				Dst:   filepath.Join(abs, rel),
 			}
@@ -186,55 +192,54 @@ func CompareResolution(m1, m2 map[string]Resolution) ([]Action, []Action) {
 	var match, dfr []Action
 	for rel, res1 := range m1 {
 		if res2, ok := m2[rel]; ok {
-			switch {
-			case res1.Act == Match:
-				switch {
-				case res2.Act == Match:
+			switch res1.Act {
+			case ActMatch:
+				switch res2.Act {
+				case ActMatch:
 					match = append(match, createAction(res1.Act, res1.FiSrc, res2.FiSrc))
-				case res2.Act == Delete:
+				case ActDelete:
 					dfr = append(dfr, createAction(res2.Act, res2.FiSrc, res1.FiSrc))
-				case res2.Act == Replace:
+				case ActReplace:
 					dfr = append(dfr, createAction(res2.Act, res2.FiSrc, res1.FiSrc))
 				default:
 					dfr = append(dfr, question(res1, res2))
 				}
-			case res1.Act == Delete:
-				switch {
-				case res2.Act == Match:
+			case ActDelete:
+				switch res2.Act {
+				case ActMatch:
 					dfr = append(dfr, createAction(res1.Act, res1.FiSrc, res2.FiSrc))
-				case res2.Act == Delete:
+				case ActDelete:
 					continue
 				default:
 					dfr = append(dfr, question(res1, res2))
 				}
-			case res1.Act == Problem:
-				if res2.Act == Problem && res1.FiSrc.Time == res2.FiSrc.Time {
-					match = append(match, createAction(Match, res1.FiSrc, res2.FiSrc))
+			case ActProblem:
+				if res2.Act == ActProblem && res1.FiSrc.Time == res2.FiSrc.Time {
+					match = append(match, createAction(ActMatch, res1.FiSrc, res2.FiSrc))
 				} else {
 					dfr = append(dfr, question(res1, res2))
 				}
-			case res1.Act == Replace:
-				switch {
-				case res2.Act == Match:
+			case ActReplace:
+				switch res2.Act {
+				case ActMatch:
 					dfr = append(dfr, createAction(res1.Act, res1.FiSrc, res2.FiSrc))
-				case res2.Act == Replace:
+				case ActReplace:
 					if res1.FiSrc.Time == res2.FiSrc.Time {
-						match = append(match, createAction(Match, res1.FiSrc, res2.FiSrc))
+						match = append(match, createAction(ActMatch, res1.FiSrc, res2.FiSrc))
 					} else {
 						dfr = append(dfr, question(res1, res2))
 					}
 				default:
 					dfr = append(dfr, question(res1, res2))
 				}
-			case res1.Act == Create:
+			case ActCreate:
 				if res1.FiSrc.Time == res2.FiSrc.Time {
-					match = append(match, createAction(Match, res1.FiSrc, res2.FiSrc))
+					match = append(match, createAction(ActMatch, res1.FiSrc, res2.FiSrc))
 				} else {
 					dfr = append(dfr, question(res1, res2))
 				}
 			}
-		}
-		if _, ok := m2[rel]; !ok {
+		} else {
 			dfr = append(dfr, createAction(res1.Act, res1.FiSrc, FI{
 				Abs: res1.Dst,
 			}))
@@ -251,30 +256,30 @@ func CompareResolution(m1, m2 map[string]Resolution) ([]Action, []Action) {
 }
 
 func question(res1, res2 Resolution) Action {
-	fmt.Println("File", res1.Description(), "and file", res2.Description())
-	if res1.Act == Match {
-		res1.Act = Replace
+	fmt.Println("File", res1.String(), "and file", res2.String())
+	if res1.Act == ActMatch {
+		res1.Act = ActReplace
 	}
-	if res1.Act == Problem {
-		if res2.Act == Delete {
-			res1.Act = Create
+	if res1.Act == ActProblem {
+		if res2.Act == ActDelete {
+			res1.Act = ActCreate
 		} else {
-			res1.Act = Replace
+			res1.Act = ActReplace
 		}
 	}
-	if res2.Act == Match {
-		res2.Act = Replace
+	if res2.Act == ActMatch {
+		res2.Act = ActReplace
 	}
-	if res2.Act == Problem {
-		if res1.Act == Delete {
-			res2.Act = Create
+	if res2.Act == ActProblem {
+		if res1.Act == ActDelete {
+			res2.Act = ActCreate
 		} else {
-			res2.Act = Replace
+			res2.Act = ActReplace
 		}
 	}
-	if res1.Act == Create && res1.Act == Create {
-		res1.Act = Replace
-		res2.Act = Replace
+	if res1.Act == ActCreate && res2.Act == ActCreate {
+		res1.Act = ActReplace
+		res2.Act = ActReplace
 	}
 	fmt.Println("Enter \"<\" for", res2.Act.String(), "file in", res2.Dst, "or enter \">\" for", res1.Act.String(), "file in", res1.Dst+
 		" or enter any other character to skip the file synchronization\n")
@@ -292,26 +297,27 @@ func question(res1, res2 Resolution) Action {
 	return nil
 }
 
+//TODO: convert to method
 func createAction(act Act, fiSrc, fiDst FI) Action {
 	var action Action
 	switch act {
-	case Match:
+	case ActMatch:
 		action = &Base{
 			FiSrc: fiSrc,
 			FiDst: fiDst,
 		}
-	case Delete:
-		action = &Dlt{Base{
+	case ActDelete:
+		action = &Delete{Base{
 			FiSrc: fiSrc,
 			FiDst: fiDst,
 		}}
-	case Replace:
-		action = &Rpl{Base{
+	case ActReplace:
+		action = &Replace{Base{
 			FiSrc: fiSrc,
 			FiDst: fiDst,
 		}}
-	case Create:
-		action = &Crt{Base{
+	case ActCreate:
+		action = &Create{Base{
 			FiSrc: fiSrc,
 			FiDst: fiDst,
 		}}
@@ -319,9 +325,10 @@ func createAction(act Act, fiSrc, fiDst FI) Action {
 	return action
 }
 
-func Convert(arr []FI) map[string]FI {
+func toMap(arr []FI) map[string]FI {
 	m := make(map[string]FI)
 	for _, fi := range arr {
+		//TODO: некоторые функции вроде os.Stat могут вернуть полный путь из info.Name()
 		m[filepath.Join(fi.Rel, fi.Name)] = fi
 	}
 	return m

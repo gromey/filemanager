@@ -37,7 +37,7 @@ func Dupl(c Config) error {
 		return nil
 	}
 	for _, action := range match {
-		fmt.Println(action.Description())
+		fmt.Println(action)
 	}
 	return nil
 }

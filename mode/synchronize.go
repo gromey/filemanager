@@ -52,14 +52,14 @@ func Sync(c Config) error {
 	res2 := engine.CompareSync(arr, in2, path1)
 	match, dfr := engine.CompareResolution(res1, res2)
 	for _, action := range match {
-		fmt.Println(action.Description())
+		fmt.Println(action)
 	}
 	if len(dfr) == 0 {
 		fmt.Println("No files for synchronization\n")
 		return nil
 	}
 	for _, action := range dfr {
-		fmt.Println(action.Description())
+		fmt.Println(action)
 	}
 	fmt.Println("Pleace enter \"Y\" for synchronization " +
 		"or enter any other character to cancel synchronization\n")
@@ -73,7 +73,10 @@ func Sync(c Config) error {
 			}
 		}
 		fmt.Println("Synchronize is done\n")
-		writeResult(include)
+		err = writeResult(include)
+		if err != nil {
+			return err
+		}
 	} else {
 		fmt.Println("Synchronize canceled by user\n")
 	}
@@ -88,7 +91,10 @@ func readResult() ([]engine.FI, error) {
 	}
 	defer r.Close()
 	dec := json.NewDecoder(r)
-	dec.Decode(&arr)
+	err = dec.Decode(&arr)
+	if err != nil {
+		return nil, err
+	}
 	return arr, nil
 }
 
