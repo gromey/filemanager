@@ -33,7 +33,7 @@ func Dupl(c Config) error {
 	}
 	match := engine.CompareDpl(incl)
 	if len(match) == 0 {
-		fmt.Println("No match\n")
+		fmt.Printf("No match\n\n")
 		return nil
 	}
 	for _, action := range match {

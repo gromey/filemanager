@@ -112,7 +112,10 @@ func writeResult(include bool) error {
 		return fmt.Errorf("could not create file result.json: %v", err)
 	}
 	defer w.Close()
-	json.NewEncoder(w).Encode(in)
+	err = json.NewEncoder(w).Encode(in)
+	if err != nil {
+		return fmt.Errorf("could not encode file result.json: %v", err)
+	}
 	fmt.Println("Done.")
 	return nil
 }

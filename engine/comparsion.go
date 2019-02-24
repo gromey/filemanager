@@ -30,12 +30,12 @@ type Action interface {
 }
 
 func (b *Base) Apply() error {
-	s, err := os.Open(b.FiSrc.PathAbs)
+	r, err := os.Open(b.FiSrc.PathAbs)
 	if err != nil {
 		return fmt.Errorf("could not open %v: %v", b.FiSrc.PathAbs, err)
 	}
-	defer s.Close()
-	if fi, err := s.Stat(); err == nil && fi.IsDir() {
+	defer r.Close()
+	if fi, err := r.Stat(); err == nil && fi.IsDir() {
 		return nil
 	}
 	path := filepath.Dir(b.FiDst.PathAbs)
@@ -47,7 +47,7 @@ func (b *Base) Apply() error {
 		return fmt.Errorf("could not create file %v: %v", b.FiDst.PathAbs, err)
 	}
 	defer w.Close()
-	if _, err = io.Copy(w, s); err != nil {
+	if _, err = io.Copy(w, r); err != nil {
 		_ = os.Remove(b.FiDst.PathAbs)
 		return fmt.Errorf("could not copy file %v: %v", b.FiDst.PathAbs, err)
 	}
@@ -165,26 +165,22 @@ func CompareSync(arr1, arr2 []FI, abs string) map[string]Resolution {
 				},
 			}
 		} else if !fi1.IsDir && !fi2.IsDir {
+			base := Base{
+				FiSrc: fi2,
+				FiDst: FI{
+					PathAbs: filepath.Join(abs, relName),
+				},
+			}
 			switch {
 			case fi1.ModTime.After(fi2.ModTime):
 				m[relName] = Resolution{
-					Act: ActProblem,
-					Base: Base{
-						FiSrc: fi2,
-						FiDst: FI{
-							PathAbs: filepath.Join(abs, relName),
-						},
-					},
+					Act:  ActProblem,
+					Base: base,
 				}
 			case fi2.ModTime.After(fi1.ModTime):
 				m[relName] = Resolution{
-					Act: ActReplace,
-					Base: Base{
-						FiSrc: fi2,
-						FiDst: FI{
-							PathAbs: filepath.Join(abs, relName),
-						},
-					},
+					Act:  ActReplace,
+					Base: base,
 				}
 			}
 		}
@@ -308,7 +304,7 @@ func question(res1, res2 Resolution) Action {
 		res2.Act = ActReplace
 	}
 	fmt.Println("Enter \">\" for", res1.Act.String(), "file in", res1.FiDst.PathAbs+
-		"or enter \"<\" for", res2.Act.String(), "file in", res2.FiDst.PathAbs+
+		" or enter \"<\" for", res2.Act.String(), "file in", res2.FiDst.PathAbs+
 		" or enter any other character to skip the file synchronization\n")
 	var ask string
 	fmt.Scanln(&ask)

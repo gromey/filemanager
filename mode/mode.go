@@ -30,12 +30,12 @@ func Run(config string) error {
 	if os.IsNotExist(err) {
 		return fmt.Errorf("no config file")
 	} else if err != nil {
-		return fmt.Errorf("а %v", err)
+		return fmt.Errorf("could not read config %v", err)
 	}
 	var c []Config
 	err = json.Unmarshal(data, &c)
 	if err != nil {
-		return fmt.Errorf("б %v", err)
+		return fmt.Errorf("could not unmarshal config %v", err)
 	}
 	for _, config := range c {
 		switch config.Mode {
