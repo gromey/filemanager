@@ -35,18 +35,18 @@ func Sync(c Config) error {
 	if c.Mask.On && c.Mask.Verbose {
 		excluded := append(ex1, ex2...)
 		sort.Slice(excluded, func(i, j int) bool {
-			return excluded[i].Abs < excluded[j].Abs
+			return excluded[i].PathAbs < excluded[j].PathAbs
 		})
 		for _, fi := range excluded {
-			fmt.Printf("%q\t%v\t%q\t%q\n", fi.Abs, fi.Size, fi.Time, "the file is excluded by a mask")
+			fmt.Printf("%q\t%v\t%q\t%q\n", fi.PathAbs, fi.Size, fi.ModTime, "the file is excluded by a mask")
 		}
 	}
 	arr, err := readResult()
 	if err != nil {
-		fmt.Println("The first synchronization will take place\n")
+		fmt.Printf("The first synchronization will take place\n\n")
 	}
 	for _, fi := range arr {
-		fmt.Printf("%q\t%v\t%q\t%q\n", fi.Abs, fi.Size, fi.Time, "read")
+		fmt.Printf("%q\t%v\t%q\t%q\n", fi.PathAbs, fi.Size, fi.ModTime, "read")
 	}
 	res1 := engine.CompareSync(arr, in1, path2)
 	res2 := engine.CompareSync(arr, in2, path1)
@@ -55,14 +55,14 @@ func Sync(c Config) error {
 		fmt.Println(action)
 	}
 	if len(dfr) == 0 {
-		fmt.Println("No files for synchronization\n")
+		fmt.Printf("No files for synchronization\n\n")
 		return nil
 	}
 	for _, action := range dfr {
 		fmt.Println(action)
 	}
-	fmt.Println("Pleace enter \"Y\" for synchronization " +
-		"or enter any other character to cancel synchronization\n")
+	fmt.Printf("Pleace enter \"Y\" for synchronization " +
+		"or enter any other character to cancel synchronization\n\n")
 	var ask string
 	fmt.Scanln(&ask)
 	if ask == "y" || ask == "Y" {
@@ -72,13 +72,13 @@ func Sync(c Config) error {
 				return err
 			}
 		}
-		fmt.Println("Synchronize is done\n")
+		fmt.Printf("Synchronize is done\n\n")
 		err = writeResult(include)
 		if err != nil {
 			return err
 		}
 	} else {
-		fmt.Println("Synchronize canceled by user\n")
+		fmt.Printf("Synchronize canceled by user\n\n")
 	}
 	return nil
 }
@@ -99,7 +99,7 @@ func readResult() ([]engine.FI, error) {
 }
 
 func writeResult(include bool) error {
-	fmt.Println("Write resutl file.")
+	fmt.Println("Write result file.")
 	ex, in, err := engine.ReadDir(path1, ext)
 	if err != nil {
 		return err

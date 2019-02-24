@@ -25,10 +25,10 @@ func Dupl(c Config) error {
 	}
 	if c.Mask.On && c.Mask.Verbose {
 		sort.Slice(excl, func(i, j int) bool {
-			return excl[i].Abs < excl[j].Abs
+			return excl[i].PathAbs < excl[j].PathAbs
 		})
 		for _, fi := range excl {
-			fmt.Printf("%q\t%v\t%q\t%q\n", fi.Abs, fi.Size, fi.Time, "the file is excluded by a mask")
+			fmt.Printf("%q\t%v\t%q\t%q\n", fi.PathAbs, fi.Size, fi.ModTime, "the file is excluded by a mask")
 		}
 	}
 	match := engine.CompareDpl(incl)

@@ -12,13 +12,13 @@ import (
 )
 
 type FI struct {
-	Abs  string
-	Rel  string
-	Name string
-	Size int64
-	Time time.Time
-	Dir  bool
-	Hash string
+	IsDir   bool
+	Size    int64
+	ModTime time.Time
+	Name    string
+	PathAbs string
+	PathRel string
+	Hash    string
 }
 
 func ReadDir(root string, mask []string) ([]FI, []FI, error) {
@@ -33,51 +33,51 @@ func readDir(root, rel string, mask []string) ([]FI, []FI, error) {
 	defer dh.Close()
 	files, err := dh.Readdir(-1)
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not read Dir names in %v: %v", root, err)
+		return nil, nil, fmt.Errorf("could not read names in dir %v: %v", root, err)
 	}
-	var insideMask []FI
-	var outsideMask []FI
+	var inMask []FI
+	var outMask []FI
 	for _, file := range files {
+		abs := filepath.Join(root, file.Name())
 		var hash string
 		if !file.IsDir() {
-			hash, err = getHash(filepath.Join(root, file.Name()))
+			hash, err = getHash(abs)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, fmt.Errorf("could not get hash for %v: %v", abs, err)
 			}
 		}
-		if maskFilter(file.Name(), mask) == true {
-			insideMask = append(insideMask, FI{
-				Abs:  filepath.Join(root, file.Name()),
-				Rel:  rel,
-				Name: file.Name(),
-				Size: file.Size(),
-				Time: file.ModTime(),
-				Dir:  file.IsDir(),
-				Hash: hash,
+		if maskFilter(file.Name(), mask) {
+			inMask = append(inMask, FI{
+				IsDir:   file.IsDir(),
+				Size:    file.Size(),
+				ModTime: file.ModTime(),
+				Name:    file.Name(),
+				PathAbs: abs,
+				PathRel: rel,
+				Hash:    hash,
 			})
 			continue
 		} else if !file.IsDir() {
-			outsideMask = append(outsideMask, FI{
-				Abs:  filepath.Join(root, file.Name()),
-				Rel:  rel,
-				Name: file.Name(),
-				Size: file.Size(),
-				Time: file.ModTime(),
-				Dir:  file.IsDir(),
-				Hash: hash,
+			outMask = append(outMask, FI{
+				IsDir:   file.IsDir(),
+				Size:    file.Size(),
+				ModTime: file.ModTime(),
+				Name:    file.Name(),
+				PathAbs: abs,
+				PathRel: rel,
+				Hash:    hash,
 			})
 		}
 		if file.IsDir() {
-			path := filepath.Join(root, file.Name())
-			inM, noM, err := readDir(path, filepath.Join(rel, file.Name()), mask)
+			inM, outM, err := readDir(abs, filepath.Join(rel, file.Name()), mask)
 			if err != nil {
 				return nil, nil, err
 			}
-			insideMask = append(insideMask, inM...)
-			outsideMask = append(outsideMask, noM...)
+			inMask = append(inMask, inM...)
+			outMask = append(outMask, outM...)
 		}
 	}
-	return insideMask, outsideMask, nil
+	return inMask, outMask, nil
 }
 
 func maskFilter(name string, mask []string) bool {
