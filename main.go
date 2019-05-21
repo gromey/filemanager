@@ -2,7 +2,8 @@ package main
 
 import (
 	"log"
-	"syncdata/mode"
+
+	"github.com/GroM1124/sync/mode"
 )
 
 func main() {

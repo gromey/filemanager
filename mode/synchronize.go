@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"syncdata/engine"
+
+	"github.com/GroM1124/sync/engine"
 )
 
 var path1 string

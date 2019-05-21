@@ -3,7 +3,8 @@ package mode
 import (
 	"fmt"
 	"sort"
-	"syncdata/engine"
+
+	"github.com/GroM1124/sync/engine"
 )
 
 func Dupl(c Config) error {
