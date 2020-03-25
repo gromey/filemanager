@@ -14,7 +14,8 @@ func Dupl(c Config) error {
 	}
 	var excl, incl []engine.FI
 	for _, path := range c.Paths {
-		ex, in, err := engine.ReadDir(path, ext)
+		rd := engine.SetRD(path, ext, c.GetHash)
+		ex, in, err := rd.ReadDir()
 		if err != nil {
 			return err
 		}

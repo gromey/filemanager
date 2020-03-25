@@ -12,7 +12,8 @@
       ],
       "include": false,
       "verbose": true
-    }
+    },
+    "getHash": false
   },
   {
     "mode": 2,
@@ -26,6 +27,7 @@
       ],
       "include": true,
       "verbose": false
-    }
+    },
+    "getHash": true
   }
 ]
