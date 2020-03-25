@@ -16,6 +16,7 @@ type Config struct {
 		Include bool     `json:"Include"`
 		Verbose bool     `json:"verbose"`
 	} `json:"mask"`
+	GetHash bool `json:"getHash"`
 }
 
 type Mode int
@@ -40,7 +41,23 @@ func Run(config string) error {
 	for _, config := range c {
 		switch config.Mode {
 		case Synchronize:
-			err := Sync(config)
+			var ext []string
+			include := false
+			verbose := false
+			if config.Mask.On {
+				ext = config.Mask.Ext
+				include = config.Mask.Include
+				verbose = config.Mask.Verbose
+			}
+			syncer := Syncer{
+				path1:   config.Paths[0],
+				path2:   config.Paths[1],
+				ext:     ext,
+				include: include,
+				verbose: verbose,
+				getHash: config.GetHash,
+			}
+			err := syncer.Sync()
 			if err != nil {
 				return err
 			}

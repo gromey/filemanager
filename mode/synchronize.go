@@ -9,31 +9,32 @@ import (
 	"github.com/GroM1124/sync/engine"
 )
 
-var path1 string
-var path2 string
-var ext []string
+type Syncer struct {
+	path1   string
+	path2   string
+	mask    bool
+	ext     []string
+	include bool
+	verbose bool
+	getHash bool
+}
 
-func Sync(c Config) error {
-	path1 = c.Paths[0]
-	path2 = c.Paths[1]
-	if c.Mask.On {
-		ext = c.Mask.Ext
-	}
-	ex1, in1, err := engine.ReadDir(path1, ext)
+func (s *Syncer) Sync() error {
+	rd1 := engine.SetRD(s.path1, s.ext, s.getHash)
+	rd2 := engine.SetRD(s.path2, s.ext, s.getHash)
+	ex1, in1, err := rd1.ReadDir()
 	if err != nil {
 		return err
 	}
-	ex2, in2, err := engine.ReadDir(path2, ext)
+	ex2, in2, err := rd2.ReadDir()
 	if err != nil {
 		return err
 	}
-	include := false
-	if c.Mask.On && c.Mask.Include {
+	if s.include {
 		ex1, in1 = in1, ex1
 		ex2, in2 = in2, ex2
-		include = true
 	}
-	if c.Mask.On && c.Mask.Verbose {
+	if s.verbose {
 		excluded := append(ex1, ex2...)
 		sort.Slice(excluded, func(i, j int) bool {
 			return excluded[i].PathAbs < excluded[j].PathAbs
@@ -49,8 +50,8 @@ func Sync(c Config) error {
 	for _, fi := range arr {
 		fmt.Printf("%q\t%v\t%q\t%q\n", fi.PathAbs, fi.Size, fi.ModTime, "read")
 	}
-	res1 := engine.CompareSync(arr, in1, path2)
-	res2 := engine.CompareSync(arr, in2, path1)
+	res1 := engine.CompareSync(arr, in1, s.path2)
+	res2 := engine.CompareSync(arr, in2, s.path1)
 	match, dfr := engine.CompareResolution(res1, res2)
 	for _, action := range match {
 		fmt.Println(action)
@@ -74,7 +75,7 @@ func Sync(c Config) error {
 			}
 		}
 		fmt.Printf("Synchronize is done\n\n")
-		err = writeResult(include)
+		err = s.writeResult(*rd1)
 		if err != nil {
 			return err
 		}
@@ -99,13 +100,13 @@ func readResult() ([]engine.FI, error) {
 	return arr, nil
 }
 
-func writeResult(include bool) error {
+func (s *Syncer) writeResult(rd engine.RD) error {
 	fmt.Println("Write result file.")
-	ex, in, err := engine.ReadDir(path1, ext)
+	ex, in, err := rd.ReadDir()
 	if err != nil {
 		return err
 	}
-	if include {
+	if s.include {
 		ex, in = in, ex
 	}
 	w, err := os.Create("result.json")
