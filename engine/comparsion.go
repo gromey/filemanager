@@ -5,11 +5,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/GroM1124/filemanager/readdir"
 )
 
 type Base struct {
-	FiSrc FI
-	FiDst FI
+	FiSrc readdir.FI
+	FiDst readdir.FI
 }
 
 type Create struct {
@@ -140,7 +142,7 @@ func (r *Resolution) String() string {
 	return s
 }
 
-func CompareSync(arr1, arr2 []FI, abs string) map[string]Resolution {
+func CompareSync(arr1, arr2 []readdir.FI, abs string) map[string]Resolution {
 	m1 := toMap(arr1)
 	m2 := toMap(arr2)
 	m := make(map[string]Resolution)
@@ -149,8 +151,8 @@ func CompareSync(arr1, arr2 []FI, abs string) map[string]Resolution {
 			m[relName] = Resolution{
 				Act: ActMatch,
 				Base: Base{
-					FiSrc: fi2,
-					FiDst: fi1,
+					FiSrc: fi1,
+					FiDst: fi2,
 				},
 			}
 		}
@@ -159,7 +161,7 @@ func CompareSync(arr1, arr2 []FI, abs string) map[string]Resolution {
 				Act: ActDelete,
 				Base: Base{
 					FiSrc: fi1,
-					FiDst: FI{
+					FiDst: readdir.FI{
 						PathAbs: filepath.Join(abs, relName),
 					},
 				},
@@ -167,7 +169,7 @@ func CompareSync(arr1, arr2 []FI, abs string) map[string]Resolution {
 		} else if !fi1.IsDir && !fi2.IsDir {
 			base := Base{
 				FiSrc: fi2,
-				FiDst: FI{
+				FiDst: readdir.FI{
 					PathAbs: filepath.Join(abs, relName),
 				},
 			}
@@ -191,7 +193,7 @@ func CompareSync(arr1, arr2 []FI, abs string) map[string]Resolution {
 				Act: ActCreate,
 				Base: Base{
 					FiSrc: fi2,
-					FiDst: FI{
+					FiDst: readdir.FI{
 						PathAbs: filepath.Join(abs, relName),
 					},
 				},
@@ -209,7 +211,7 @@ func CompareResolution(m1, m2 map[string]Resolution) ([]Action, []Action) {
 			case ActMatch:
 				switch res2.Act {
 				case ActMatch:
-					match = append(match, res1.createAction())
+					match = append(match, res2.createAction())
 				case ActDelete, ActReplace:
 					dfr = append(dfr, res2.createAction())
 				default:
@@ -334,8 +336,8 @@ func (r *Resolution) createAction() Action {
 	return action
 }
 
-func toMap(arr []FI) map[string]FI {
-	m := make(map[string]FI)
+func toMap(arr []readdir.FI) map[string]readdir.FI {
+	m := make(map[string]readdir.FI)
 	for _, fi := range arr {
 		//TODO: некоторые функции вроде os.Stat могут вернуть полный путь из info.Name()
 		m[filepath.Join(fi.PathRel, fi.Name)] = fi
@@ -343,8 +345,8 @@ func toMap(arr []FI) map[string]FI {
 	return m
 }
 
-func CompareDpl(arr []FI) []Action {
-	m := make(map[string]FI)
+func CompareDpl(arr []readdir.FI) []Action {
+	m := make(map[string]readdir.FI)
 	var match []Action
 	for _, fi := range arr {
 		if fiM, ok := m[fi.Hash]; ok {
