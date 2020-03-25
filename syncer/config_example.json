@@ -1,0 +1,28 @@
+[
+  {
+    "path1": "D:\\folder1",
+    "path2": "D:\\folder2",
+    "mask": {
+      "on": false,
+      "ext": [
+        ".rar"
+      ],
+      "include": false,
+      "verbose": true
+    },
+    "getHash": false
+  },
+  {
+    "path1": "D:\\folder3",
+    "path2": "D:\\folder4",
+    "mask": {
+      "on": true,
+      "ext": [
+        ".jpg"
+      ],
+      "include": true,
+      "verbose": false
+    },
+    "getHash": true
+  }
+]

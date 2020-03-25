@@ -1,6 +1,5 @@
 [
   {
-    "mode": 1,
     "paths": [
       "D:\\folder1",
       "D:\\folder2"
@@ -12,13 +11,13 @@
       ],
       "include": false,
       "verbose": true
-    },
-    "getHash": false
+    }
   },
   {
-    "mode": 2,
     "paths": [
-      "E:\\folder"
+      "D:\\folder3",
+      "D:\\folder4",
+      "D:\\folder5"
     ],
     "mask": {
       "on": true,
@@ -27,7 +26,6 @@
       ],
       "include": true,
       "verbose": false
-    },
-    "getHash": true
+    }
   }
 ]

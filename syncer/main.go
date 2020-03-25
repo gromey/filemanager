@@ -1,18 +1,76 @@
-package mode
+package main
 
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 	"sort"
 
-	"github.com/GroM1124/sync/engine"
+	"github.com/GroM1124/filemanager/engine"
+	"github.com/GroM1124/filemanager/readdir"
 )
+
+func main() {
+	err := Run("syncer/config.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+type Config struct {
+	Path1 string `json:"path1"`
+	Path2 string `json:"path2"`
+	Mask  struct {
+		On      bool     `json:"on"`
+		Ext     []string `json:"ext"`
+		Include bool     `json:"Include"`
+		Verbose bool     `json:"verbose"`
+	} `json:"mask"`
+	GetHash bool `json:"getHash"`
+}
+
+func Run(config string) error {
+	data, err := ioutil.ReadFile(config)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("no config file")
+	} else if err != nil {
+		return fmt.Errorf("could not read config %v", err)
+	}
+	var c []Config
+	err = json.Unmarshal(data, &c)
+	if err != nil {
+		return fmt.Errorf("could not unmarshal config %v", err)
+	}
+	for _, config := range c {
+		var ext []string
+		var include bool
+		var verbose bool
+		if config.Mask.On {
+			ext = config.Mask.Ext
+			include = config.Mask.Include
+			verbose = config.Mask.Verbose
+		}
+		syncer := Syncer{
+			path1:   config.Path1,
+			path2:   config.Path2,
+			ext:     ext,
+			include: include,
+			verbose: verbose,
+			getHash: config.GetHash,
+		}
+		err := syncer.Sync()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 type Syncer struct {
 	path1   string
 	path2   string
-	mask    bool
 	ext     []string
 	include bool
 	verbose bool
@@ -20,8 +78,8 @@ type Syncer struct {
 }
 
 func (s *Syncer) Sync() error {
-	rd1 := engine.SetRD(s.path1, s.ext, s.getHash)
-	rd2 := engine.SetRD(s.path2, s.ext, s.getHash)
+	rd1 := readdir.SetRD(s.path1, s.ext, s.getHash)
+	rd2 := readdir.SetRD(s.path2, s.ext, s.getHash)
 	ex1, in1, err := rd1.ReadDir()
 	if err != nil {
 		return err
@@ -53,6 +111,7 @@ func (s *Syncer) Sync() error {
 	res1 := engine.CompareSync(arr, in1, s.path2)
 	res2 := engine.CompareSync(arr, in2, s.path1)
 	match, dfr := engine.CompareResolution(res1, res2)
+	//fmt.Println(match, dfr)
 	for _, action := range match {
 		fmt.Println(action)
 	}
@@ -85,8 +144,8 @@ func (s *Syncer) Sync() error {
 	return nil
 }
 
-func readResult() ([]engine.FI, error) {
-	var arr []engine.FI
+func readResult() ([]readdir.FI, error) {
+	var arr []readdir.FI
 	r, err := os.Open("result.json")
 	if err != nil {
 		return nil, fmt.Errorf("could not open file result.json: %v", err)
@@ -100,7 +159,7 @@ func readResult() ([]engine.FI, error) {
 	return arr, nil
 }
 
-func (s *Syncer) writeResult(rd engine.RD) error {
+func (s *Syncer) writeResult(rd readdir.RD) error {
 	fmt.Println("Write result file.")
 	ex, in, err := rd.ReadDir()
 	if err != nil {

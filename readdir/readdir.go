@@ -1,4 +1,4 @@
-package engine
+package readdir
 
 import (
 	"crypto/md5"
