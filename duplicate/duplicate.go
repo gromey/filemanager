@@ -1,10 +1,9 @@
-package main
+package duplicate
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"sort"
 
@@ -12,14 +11,7 @@ import (
 	"github.com/GroM1124/filemanager/readdir"
 )
 
-func main() {
-	err := Run("duplicate/config.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-type Config struct {
+type Duplicate struct {
 	Paths []string `json:"paths"`
 	Mask  struct {
 		On      bool     `json:"on"`
@@ -36,13 +28,13 @@ func Run(config string) error {
 	} else if err != nil {
 		return fmt.Errorf("could not read config %v", err)
 	}
-	var c []Config
-	err = json.Unmarshal(data, &c)
+	var d []Duplicate
+	err = json.Unmarshal(data, &d)
 	if err != nil {
 		return fmt.Errorf("could not unmarshal config %v", err)
 	}
-	for _, config := range c {
-		err := Dupl(config)
+	for _, duplicate := range d {
+		err := duplicate.Dupl()
 		if err != nil {
 			return err
 		}
@@ -50,13 +42,13 @@ func Run(config string) error {
 	return nil
 }
 
-func Dupl(c Config) error {
+func (d *Duplicate) Dupl() error {
 	var ext []string
-	if c.Mask.On {
-		ext = c.Mask.Ext
+	if d.Mask.On {
+		ext = d.Mask.Ext
 	}
 	var excl, incl []readdir.FI
-	for _, path := range c.Paths {
+	for _, path := range d.Paths {
 		rd := readdir.SetRD(path, ext, true)
 		ex, in, err := rd.ReadDir()
 		if err != nil {
@@ -65,10 +57,10 @@ func Dupl(c Config) error {
 		excl = append(excl, ex...)
 		incl = append(incl, in...)
 	}
-	if c.Mask.On && c.Mask.Include {
+	if d.Mask.On && d.Mask.Include {
 		excl, incl = incl, excl
 	}
-	if c.Mask.On && c.Mask.Verbose {
+	if d.Mask.On && d.Mask.Verbose {
 		sort.Slice(excl, func(i, j int) bool {
 			return excl[i].PathAbs < excl[j].PathAbs
 		})
