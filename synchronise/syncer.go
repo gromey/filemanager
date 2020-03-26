@@ -1,10 +1,9 @@
-package main
+package synchronise
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"sort"
 
@@ -12,14 +11,7 @@ import (
 	"github.com/GroM1124/filemanager/readdir"
 )
 
-func main() {
-	err := Run("syncer/config.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-type Config struct {
+type Synchronise struct {
 	Path1 string `json:"path1"`
 	Path2 string `json:"path2"`
 	Mask  struct {
@@ -38,29 +30,18 @@ func Run(config string) error {
 	} else if err != nil {
 		return fmt.Errorf("could not read config %v", err)
 	}
-	var c []Config
-	err = json.Unmarshal(data, &c)
+	var s []Synchronise
+	err = json.Unmarshal(data, &s)
 	if err != nil {
 		return fmt.Errorf("could not unmarshal config %v", err)
 	}
-	for _, config := range c {
-		var ext []string
-		var include bool
-		var verbose bool
-		if config.Mask.On {
-			ext = config.Mask.Ext
-			include = config.Mask.Include
-			verbose = config.Mask.Verbose
+	for _, sync := range s {
+		if !sync.Mask.On {
+			sync.Mask.Ext = nil
+			sync.Mask.Include = false
+			sync.Mask.Verbose = false
 		}
-		syncer := Syncer{
-			path1:   config.Path1,
-			path2:   config.Path2,
-			ext:     ext,
-			include: include,
-			verbose: verbose,
-			getHash: config.GetHash,
-		}
-		err := syncer.Sync()
+		err := sync.Sync()
 		if err != nil {
 			return err
 		}
@@ -68,18 +49,9 @@ func Run(config string) error {
 	return nil
 }
 
-type Syncer struct {
-	path1   string
-	path2   string
-	ext     []string
-	include bool
-	verbose bool
-	getHash bool
-}
-
-func (s *Syncer) Sync() error {
-	rd1 := readdir.SetRD(s.path1, s.ext, s.getHash)
-	rd2 := readdir.SetRD(s.path2, s.ext, s.getHash)
+func (s *Synchronise) Sync() error {
+	rd1 := readdir.SetRD(s.Path1, s.Mask.Ext, s.GetHash)
+	rd2 := readdir.SetRD(s.Path2, s.Mask.Ext, s.GetHash)
 	ex1, in1, err := rd1.ReadDir()
 	if err != nil {
 		return err
@@ -88,11 +60,11 @@ func (s *Syncer) Sync() error {
 	if err != nil {
 		return err
 	}
-	if s.include {
+	if s.Mask.Include {
 		ex1, in1 = in1, ex1
 		ex2, in2 = in2, ex2
 	}
-	if s.verbose {
+	if s.Mask.Verbose {
 		excluded := append(ex1, ex2...)
 		sort.Slice(excluded, func(i, j int) bool {
 			return excluded[i].PathAbs < excluded[j].PathAbs
@@ -108,10 +80,9 @@ func (s *Syncer) Sync() error {
 	for _, fi := range arr {
 		fmt.Printf("%q\t%v\t%q\t%q\n", fi.PathAbs, fi.Size, fi.ModTime, "read")
 	}
-	res1 := engine.CompareSync(arr, in1, s.path2)
-	res2 := engine.CompareSync(arr, in2, s.path1)
+	res1 := engine.CompareSync(arr, in1, s.Path2)
+	res2 := engine.CompareSync(arr, in2, s.Path1)
 	match, dfr := engine.CompareResolution(res1, res2)
-	//fmt.Println(match, dfr)
 	for _, action := range match {
 		fmt.Println(action)
 	}
@@ -159,13 +130,13 @@ func readResult() ([]readdir.FI, error) {
 	return arr, nil
 }
 
-func (s *Syncer) writeResult(rd readdir.RD) error {
+func (s *Synchronise) writeResult(rd readdir.RD) error {
 	fmt.Println("Write result file.")
 	ex, in, err := rd.ReadDir()
 	if err != nil {
 		return err
 	}
-	if s.include {
+	if s.Mask.Include {
 		ex, in = in, ex
 	}
 	w, err := os.Create("result.json")
