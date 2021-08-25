@@ -1,0 +1,15 @@
+[
+  {
+    "paths": [
+      "\\home\\yevhen\\Загрузки\\"
+    ],
+    "mask": {
+      "on": true,
+      "ext": [
+        ".mp3"
+      ],
+      "include": true,
+      "verbose": true
+    }
+  }
+]

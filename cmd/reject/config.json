@@ -1,0 +1,26 @@
+[
+  {
+    "paths": [
+      "/home/yevhen/Загрузки/"
+    ],
+    "mask": {
+      "on": true,
+      "ext": [
+        ".mp3"
+      ],
+      "include": true,
+      "verbose": true
+    },
+    "delete": [
+      "hiti_2020_-_",
+      "y2mate.com - ",
+      "vechnie_hiti_-_",
+      "(zf.fm)",
+      "(zv.fm)",
+      "(zvukoff.ru)"
+    ],
+    "space": [
+        "_"
+    ]
+  }
+]

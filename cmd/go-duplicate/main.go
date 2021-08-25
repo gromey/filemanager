@@ -1,9 +1,8 @@
 package main
 
 import (
+	"github.com/gromey/filemanager/duplicate"
 	"log"
-
-	"github.com/GroM1124/filemanager/duplicate"
 )
 
 func main() {

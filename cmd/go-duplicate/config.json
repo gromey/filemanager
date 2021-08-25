@@ -1,0 +1,15 @@
+[
+  {
+    "paths": [
+      "/home/evgeniy/Projects/"
+    ],
+    "mask": {
+      "on": false,
+      "ext": [
+        ".csv"
+      ],
+      "include": false,
+      "verbose": true
+    }
+  }
+]

@@ -1,5 +1,8 @@
-module github.com/GroM1124/filemanager
+module github.com/gromey/filemanager
 
-go 1.12
+go 1.16
 
-require google.golang.org/api v0.28.0
+require (
+	github.com/gorilla/mux v1.8.0
+	github.com/sirupsen/logrus v1.8.1
+)

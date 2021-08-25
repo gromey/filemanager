@@ -1,14 +1,14 @@
+//
 package duplicate
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gromey/filemanager/engine"
+	"github.com/gromey/filemanager/pkg/dirreader"
 	"io/ioutil"
 	"os"
 	"sort"
-
-	"github.com/GroM1124/filemanager/engine"
-	"github.com/GroM1124/filemanager/readdir"
 )
 
 type Duplicate struct {
@@ -16,7 +16,7 @@ type Duplicate struct {
 	Mask  struct {
 		On      bool     `json:"on"`
 		Ext     []string `json:"ext"`
-		Include bool     `json:"Include"`
+		Include bool     `json:"include"`
 		Verbose bool     `json:"verbose"`
 	} `json:"mask"`
 }
@@ -47,10 +47,10 @@ func (d *Duplicate) Dupl() error {
 	if d.Mask.On {
 		ext = d.Mask.Ext
 	}
-	var excl, incl []readdir.FI
+	var excl, incl []dirreader.FileInfo
 	for _, path := range d.Paths {
-		rd := readdir.SetRD(path, ext, true)
-		ex, in, err := rd.ReadDir()
+		rd := dirreader.SetDirReader(path, ext, true)
+		ex, in, err := rd.Exec()
 		if err != nil {
 			return err
 		}
