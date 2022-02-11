@@ -1,0 +1,22 @@
+[
+  {
+    "paths": [
+      "/dir1/dir2/dir3"
+    ],
+    "mask": {
+      "on": true,
+      "extension": [
+        ".mp3"
+      ],
+      "include": true,
+      "details": true
+    },
+    "delete": [
+      "some text",
+      "other"
+    ],
+    "space": [
+      "_"
+    ]
+  }
+]
