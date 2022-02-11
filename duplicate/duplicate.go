@@ -1,7 +1,6 @@
 package duplicate
 
 import (
-	"fmt"
 	"github.com/gromey/filemanager/common"
 	"github.com/gromey/filemanager/dirreader"
 	"log"
@@ -29,23 +28,23 @@ func New(c *Config) *duplicate {
 }
 
 func (d *duplicate) Start() ([]Test, error) {
-	var excl, incl []dirreader.FileInfo
+	var excluded, included []dirreader.FileInfo
 
 	for _, path := range d.paths {
-		ex, in, err := dirreader.SetDirReader(path, d.extension, d.include, d.details, true).Exec()
+		exclude, include, err := dirreader.SetDirReader(path, d.extension, d.include, d.details, true).Exec()
 		if err != nil {
 			return nil, err
 		}
 
-		excl = append(excl, ex...)
-		incl = append(incl, in...)
+		excluded = append(excluded, exclude...)
+		included = append(included, include...)
 	}
 
 	if d.details {
-		log.Printf("%d %s\n", len(excl), "files was excluded by mask.")
+		log.Printf("%d %s\n", len(excluded), "files was excluded by mask.")
 	}
 
-	match := compare(incl)
+	match := compare(included)
 	if len(match) == 0 {
 		return nil, nil
 	}
@@ -67,7 +66,10 @@ func Run(config string) error {
 			return err
 		}
 
-		fmt.Println(res)
+		for _, v := range res {
+			log.Println(v)
+		}
 	}
+
 	return nil
 }

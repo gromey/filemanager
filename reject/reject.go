@@ -32,23 +32,23 @@ func New(c *Config) *reject {
 }
 
 func (r *reject) Start() error {
-	var excl, incl []dirreader.FileInfo
+	var excluded, included []dirreader.FileInfo
 
 	for _, path := range r.paths {
-		ex, in, err := dirreader.SetDirReader(path, r.extension, r.include, r.details, false).Exec()
+		exclude, include, err := dirreader.SetDirReader(path, r.extension, r.include, r.details, false).Exec()
 		if err != nil {
 			return err
 		}
 
-		excl = append(excl, ex...)
-		incl = append(incl, in...)
+		excluded = append(excluded, exclude...)
+		included = append(included, include...)
 	}
 
 	if r.details {
-		log.Printf("%d %s\n", len(excl), "files was excluded by mask.")
+		log.Printf("%d %s\n", len(excluded), "files was excluded by mask.")
 	}
 
-	for _, fi := range incl {
+	for _, fi := range included {
 		if err := r.nameEditor(fi); err != nil {
 			return err
 		}

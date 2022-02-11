@@ -1,4 +1,4 @@
-package synchronizer
+package synchronize
 
 import (
 	"fmt"
@@ -141,7 +141,7 @@ func (r *Resolution) String() string {
 	return s
 }
 
-func CompareSync(arr1, arr2 []dirreader.FileInfo, abs string) map[string]Resolution {
+func compare(arr1, arr2 []dirreader.FileInfo, abs string) map[string]Resolution {
 	m1 := toMap(arr1)
 	m2 := toMap(arr2)
 	m := make(map[string]Resolution)
@@ -336,9 +336,8 @@ func (r *Resolution) createAction() Action {
 }
 
 func toMap(arr []dirreader.FileInfo) map[string]dirreader.FileInfo {
-	m := make(map[string]dirreader.FileInfo)
+	m := make(map[string]dirreader.FileInfo, len(arr))
 	for _, fi := range arr {
-		//TODO: некоторые функции вроде os.Stat могут вернуть полный путь из info.Name()
 		m[filepath.Join(fi.PathRel, fi.Name())] = fi
 	}
 	return m
