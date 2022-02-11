@@ -27,7 +27,10 @@ func compare(arr []dirreader.FileInfo) []Test {
 					Hash:    fi.Hash,
 					Size:    fi.Size(),
 					ModTime: fi.ModTime(),
-					Paths:   []string{strings.TrimPrefix(fi.PathAbs, "/"), strings.TrimPrefix(fiDuplicate.PathAbs, "/")},
+					Paths: []string{
+						strings.TrimPrefix(fi.PathAbs, "/"),
+						strings.TrimPrefix(fiDuplicate.PathAbs, "/"),
+					},
 				}
 			} else {
 				dup.Paths = append(dup.Paths, strings.TrimPrefix(fi.PathAbs, "/"))
@@ -42,6 +45,7 @@ func compare(arr []dirreader.FileInfo) []Test {
 		sort.Slice(dup.Paths, func(i, j int) bool {
 			return dup.Paths[i] < dup.Paths[j]
 		})
+
 		res[i] = dup
 		i++
 	}
