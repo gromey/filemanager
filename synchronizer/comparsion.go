@@ -1,17 +1,16 @@
-package engine
+package synchronizer
 
 import (
 	"fmt"
+	"github.com/gromey/filemanager/dirreader"
 	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/GroM1124/filemanager/readdir"
 )
 
 type Base struct {
-	FiSrc readdir.FI
-	FiDst readdir.FI
+	FiSrc dirreader.FileInfo
+	FiDst dirreader.FileInfo
 }
 
 type Create struct {
@@ -57,7 +56,7 @@ func (b *Base) Apply() error {
 	if err != nil {
 		return fmt.Errorf("could not close file %v: %v", b.FiDst.PathAbs, err)
 	}
-	if err = os.Chtimes(b.FiDst.PathAbs, b.FiSrc.ModTime, b.FiSrc.ModTime); err != nil {
+	if err = os.Chtimes(b.FiDst.PathAbs, b.FiSrc.ModTime(), b.FiSrc.ModTime()); err != nil {
 		return fmt.Errorf("could not change ModTime %v: %v", b.FiDst.PathAbs, err)
 	}
 	return nil
@@ -142,12 +141,12 @@ func (r *Resolution) String() string {
 	return s
 }
 
-func CompareSync(arr1, arr2 []readdir.FI, abs string) map[string]Resolution {
+func CompareSync(arr1, arr2 []dirreader.FileInfo, abs string) map[string]Resolution {
 	m1 := toMap(arr1)
 	m2 := toMap(arr2)
 	m := make(map[string]Resolution)
 	for relName, fi1 := range m1 {
-		if fi2, ok := m2[relName]; ok && fi1.ModTime.Equal(fi2.ModTime) {
+		if fi2, ok := m2[relName]; ok && fi1.ModTime().Equal(fi2.ModTime()) {
 			m[relName] = Resolution{
 				Act: ActMatch,
 				Base: Base{
@@ -161,25 +160,25 @@ func CompareSync(arr1, arr2 []readdir.FI, abs string) map[string]Resolution {
 				Act: ActDelete,
 				Base: Base{
 					FiSrc: fi1,
-					FiDst: readdir.FI{
+					FiDst: dirreader.FileInfo{
 						PathAbs: filepath.Join(abs, relName),
 					},
 				},
 			}
-		} else if !fi1.IsDir && !fi2.IsDir {
+		} else if !fi1.IsDir() && !fi2.IsDir() {
 			base := Base{
 				FiSrc: fi2,
-				FiDst: readdir.FI{
+				FiDst: dirreader.FileInfo{
 					PathAbs: filepath.Join(abs, relName),
 				},
 			}
 			switch {
-			case fi1.ModTime.After(fi2.ModTime):
+			case fi1.ModTime().After(fi2.ModTime()):
 				m[relName] = Resolution{
 					Act:  ActProblem,
 					Base: base,
 				}
-			case fi2.ModTime.After(fi1.ModTime):
+			case fi2.ModTime().After(fi1.ModTime()):
 				m[relName] = Resolution{
 					Act:  ActReplace,
 					Base: base,
@@ -193,7 +192,7 @@ func CompareSync(arr1, arr2 []readdir.FI, abs string) map[string]Resolution {
 				Act: ActCreate,
 				Base: Base{
 					FiSrc: fi2,
-					FiDst: readdir.FI{
+					FiDst: dirreader.FileInfo{
 						PathAbs: filepath.Join(abs, relName),
 					},
 				},
@@ -227,7 +226,7 @@ func CompareResolution(m1, m2 map[string]Resolution) ([]Action, []Action) {
 					dfr = append(dfr, question(res1, res2))
 				}
 			case ActProblem:
-				if res2.Act == ActProblem && res1.FiSrc.ModTime == res2.FiSrc.ModTime {
+				if res2.Act == ActProblem && res1.FiSrc.ModTime() == res2.FiSrc.ModTime() {
 					res := Resolution{
 						Act: ActMatch, Base: Base{
 							FiSrc: res1.FiSrc,
@@ -242,7 +241,7 @@ func CompareResolution(m1, m2 map[string]Resolution) ([]Action, []Action) {
 				case ActMatch:
 					dfr = append(dfr, res1.createAction())
 				case ActReplace:
-					if res1.FiSrc.ModTime == res2.FiSrc.ModTime {
+					if res1.FiSrc.ModTime() == res2.FiSrc.ModTime() {
 						res := Resolution{
 							Act: ActMatch, Base: Base{
 								FiSrc: res1.FiSrc,
@@ -256,7 +255,7 @@ func CompareResolution(m1, m2 map[string]Resolution) ([]Action, []Action) {
 					dfr = append(dfr, question(res1, res2))
 				}
 			case ActCreate:
-				if res1.FiSrc.ModTime == res2.FiSrc.ModTime {
+				if res1.FiSrc.ModTime() == res2.FiSrc.ModTime() {
 					res := Resolution{
 						Act: ActMatch, Base: Base{
 							FiSrc: res1.FiSrc,
@@ -336,27 +335,11 @@ func (r *Resolution) createAction() Action {
 	return action
 }
 
-func toMap(arr []readdir.FI) map[string]readdir.FI {
-	m := make(map[string]readdir.FI)
+func toMap(arr []dirreader.FileInfo) map[string]dirreader.FileInfo {
+	m := make(map[string]dirreader.FileInfo)
 	for _, fi := range arr {
 		//TODO: некоторые функции вроде os.Stat могут вернуть полный путь из info.Name()
-		m[filepath.Join(fi.PathRel, fi.Name)] = fi
+		m[filepath.Join(fi.PathRel, fi.Name())] = fi
 	}
 	return m
-}
-
-func CompareDpl(arr []readdir.FI) []Action {
-	m := make(map[string]readdir.FI)
-	var match []Action
-	for _, fi := range arr {
-		if fiM, ok := m[fi.Hash]; ok {
-			match = append(match, &Base{
-				FiSrc: fi,
-				FiDst: fiM,
-			})
-		} else {
-			m[fi.Hash] = fi
-		}
-	}
-	return match
 }
