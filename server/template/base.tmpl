@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Manager</title>
+    <link rel="stylesheet" href="static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- main container style="display: none;" -->
+<div class="sheet">
+    <aside class="sidebar">
+        <h3 class="sidebar_title">Actions</h3>
+        <div class="sidebar_button_block">
+            {{- range .Buttons }}
+            <button class="button button1" onclick="window.location='http://localhost:8888/{{ .Path }}'">{{ .Name }}
+            </button>
+            {{end}}
+        </div>
+        <input class="selector" id="selector"/>
+    </aside>
+
+    <div class="work_container">
+        <h2 class="work_container_title">{{ .Page }}</h2>
+        {{ .WorkContainer }}
+    </div>
+</div>
+
+<script>
+    function copy(val) {
+        let input = document.getElementById('selector')
+
+        console.log(val)
+
+        input.value = val;
+        input.select();
+        document.execCommand("copy");
+    }
+</script>
+
+</body>
+</html>

@@ -1,4 +1,4 @@
-package apiserver
+package server
 
 type Config struct {
 	BindAddr string `json:"bind_addr"`

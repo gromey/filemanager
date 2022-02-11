@@ -1,15 +1,22 @@
 [
   {
     "paths": [
-      "\\home\\yevhen\\Загрузки\\"
+      "/dir1/dir2/dir3"
     ],
     "mask": {
       "on": true,
-      "ext": [
+      "extension": [
         ".mp3"
       ],
       "include": true,
-      "verbose": true
-    }
+      "details": true
+    },
+    "delete": [
+      "some text",
+      "other"
+    ],
+    "space": [
+      "_"
+    ]
   }
 ]

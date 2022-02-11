@@ -1,8 +1,8 @@
-package engine
+package synchronizer
 
 import (
 	"fmt"
-	"github.com/gromey/filemanager/pkg/dirreader"
+	"github.com/gromey/filemanager/dirreader"
 	"io"
 	"os"
 	"path/filepath"
@@ -342,20 +342,4 @@ func toMap(arr []dirreader.FileInfo) map[string]dirreader.FileInfo {
 		m[filepath.Join(fi.PathRel, fi.Name())] = fi
 	}
 	return m
-}
-
-func CompareDpl(arr []dirreader.FileInfo) []Action {
-	m := make(map[string]dirreader.FileInfo)
-	var match []Action
-	for _, fi := range arr {
-		if fiM, ok := m[fi.Hash]; ok {
-			match = append(match, &Base{
-				FiSrc: fi,
-				FiDst: fiM,
-			})
-		} else {
-			m[fi.Hash] = fi
-		}
-	}
-	return match
 }

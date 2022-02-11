@@ -1,15 +1,15 @@
 [
   {
     "paths": [
-      "/home/evgeniy/Projects/"
+      "/home/evgeniy/Рабочий стол/Music"
     ],
     "mask": {
       "on": false,
-      "ext": [
+      "extension": [
         ".csv"
       ],
       "include": false,
-      "verbose": true
+      "details": true
     }
   }
 ]

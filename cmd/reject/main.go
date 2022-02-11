@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/GroM1124/filemanager/reject"
+	"github.com/gromey/filemanager/reject"
 	"log"
 )
 

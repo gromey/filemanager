@@ -1,18 +1,18 @@
 [
   {
     "paths": [
-      "/home/yevhen/Загрузки/"
+      "/home/evgeniy/Загрузки/Music"
     ],
     "mask": {
       "on": true,
-      "ext": [
+      "extension": [
         ".mp3"
       ],
-      "include": true,
-      "verbose": true
+      "include": false,
+      "details": true
     },
     "delete": [
-      "hiti_2020_-_",
+      "_(newtopmp3.org)",
       "y2mate.com - ",
       "vechnie_hiti_-_",
       "(zf.fm)",

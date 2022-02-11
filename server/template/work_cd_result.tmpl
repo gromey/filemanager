@@ -1,0 +1,14 @@
+<div>
+    <h4 class="work_container_total">Total duplicates: {{.TD}}</h4>
+    <h4 class="work_container_total">Total duplicate files: {{.TDF}}</h4>
+    {{- range .Dubl}}
+    <ul>
+        <a>{{.Hash}}</a>
+        {{- range .Paths}}
+        <li class="work_container_item">
+            <a class="work_container_item_text" onclick="copy({{.}})">{{.}}</a>
+        </li>{{end}}
+    </ul>{{end}}
+    <h4 class="work_container_total">Total duplicates: {{.TD}}</h4>
+    <h4 class="work_container_total">Total duplicate files: {{.TDF}}</h4>
+</div>

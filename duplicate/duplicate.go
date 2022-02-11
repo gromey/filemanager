@@ -1,80 +1,73 @@
-//
 package duplicate
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/gromey/filemanager/engine"
-	"github.com/gromey/filemanager/pkg/dirreader"
-	"io/ioutil"
-	"os"
-	"sort"
+	"github.com/gromey/filemanager/common"
+	"github.com/gromey/filemanager/dirreader"
+	"log"
 )
 
-type Duplicate struct {
-	Paths []string `json:"paths"`
-	Mask  struct {
-		On      bool     `json:"on"`
-		Ext     []string `json:"ext"`
-		Include bool     `json:"include"`
-		Verbose bool     `json:"verbose"`
-	} `json:"mask"`
+type duplicate struct {
+	paths     []string
+	extension []string
+	include   bool
+	details   bool
 }
 
-func Run(config string) error {
-	data, err := ioutil.ReadFile(config)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("no config file")
-	} else if err != nil {
-		return fmt.Errorf("could not read config %v", err)
+func New(c *Config) *duplicate {
+	d := &duplicate{
+		paths: c.Paths,
 	}
-	var d []Duplicate
-	err = json.Unmarshal(data, &d)
-	if err != nil {
-		return fmt.Errorf("could not unmarshal config %v", err)
+
+	if c.Mask.On {
+		d.extension = c.Mask.Extension
+		d.include = c.Mask.Include
+		d.details = c.Mask.Details
 	}
-	for _, duplicate := range d {
-		err := duplicate.Dupl()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+
+	return d
 }
 
-func (d *Duplicate) Dupl() error {
-	var ext []string
-	if d.Mask.On {
-		ext = d.Mask.Ext
-	}
+func (d *duplicate) Start() ([]Test, error) {
 	var excl, incl []dirreader.FileInfo
-	for _, path := range d.Paths {
-		rd := dirreader.SetDirReader(path, ext, true)
-		ex, in, err := rd.Exec()
+
+	for _, path := range d.paths {
+		ex, in, err := dirreader.SetDirReader(path, d.extension, d.include, d.details, true).Exec()
 		if err != nil {
-			return err
+			return nil, err
 		}
+
 		excl = append(excl, ex...)
 		incl = append(incl, in...)
 	}
-	if d.Mask.On && d.Mask.Include {
-		excl, incl = incl, excl
+
+	if d.details {
+		log.Printf("%d %s\n", len(excl), "files was excluded by mask.")
 	}
-	if d.Mask.On && d.Mask.Verbose {
-		sort.Slice(excl, func(i, j int) bool {
-			return excl[i].PathAbs < excl[j].PathAbs
-		})
-		for _, fi := range excl {
-			fmt.Printf("%q\t%v\t%q\t%q\n", fi.PathAbs, fi.Size, fi.ModTime, "the file is excluded by a mask")
-		}
-	}
-	match := engine.CompareDpl(incl)
+
+	match := compare(incl)
 	if len(match) == 0 {
-		fmt.Printf("No match\n\n")
-		return nil
+		return nil, nil
 	}
-	for _, action := range match {
-		fmt.Println(action)
+
+	return match, nil
+}
+
+func Run(config string) error {
+	var c []*Config
+
+	err := common.GetConfig(config, c)
+	if err != nil {
+		return err
+	}
+
+	for _, cfg := range c {
+		res, err := New(cfg).Start()
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(res)
 	}
 	return nil
 }
