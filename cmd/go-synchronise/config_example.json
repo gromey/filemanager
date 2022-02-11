@@ -8,7 +8,7 @@
         ".rar"
       ],
       "include": false,
-      "verbose": true
+      "details": true
     },
     "getHash": false
   },
@@ -21,7 +21,7 @@
         ".jpg"
       ],
       "include": true,
-      "verbose": false
+      "details": false
     },
     "getHash": true
   }

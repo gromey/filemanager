@@ -1,0 +1,15 @@
+[
+  {
+    "paths": [
+      "/home/evgeniy/Рабочий стол/Music"
+    ],
+    "mask": {
+      "on": false,
+      "extension": [
+        ".csv"
+      ],
+      "include": false,
+      "details": true
+    }
+  }
+]

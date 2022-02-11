@@ -6,11 +6,11 @@
     ],
     "mask": {
       "on": false,
-      "ext": [
+      "extension": [
         ".rar"
       ],
       "include": false,
-      "verbose": true
+      "details": true
     }
   },
   {
@@ -21,11 +21,11 @@
     ],
     "mask": {
       "on": true,
-      "ext": [
+      "extension": [
         ".jpg"
       ],
       "include": true,
-      "verbose": false
+      "details": false
     }
   }
 ]
