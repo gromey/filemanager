@@ -7,23 +7,23 @@ import (
 	"time"
 )
 
-type Test struct {
+type Repeated struct {
 	Hash    string
 	Size    int64
 	ModTime time.Time
 	Paths   []string
 }
 
-func compare(arr []dirreader.FileInfo) []Test {
+func compare(arr []dirreader.FileInfo) []Repeated {
 	m := make(map[string]dirreader.FileInfo, len(arr))
-	match := make(map[string]Test)
+	match := make(map[string]Repeated)
 
 	for _, fi := range arr {
 		if fiDuplicate, ok := m[fi.Hash]; !ok {
 			m[fi.Hash] = fi
 		} else {
 			if dup, ok := match[fi.Hash]; !ok {
-				match[fi.Hash] = Test{
+				match[fi.Hash] = Repeated{
 					Hash:    fi.Hash,
 					Size:    fi.Size(),
 					ModTime: fi.ModTime(),
@@ -39,7 +39,7 @@ func compare(arr []dirreader.FileInfo) []Test {
 		}
 	}
 
-	res := make([]Test, len(match))
+	res := make([]Repeated, len(match))
 	i := 0
 	for _, dup := range match {
 		sort.Slice(dup.Paths, func(i, j int) bool {

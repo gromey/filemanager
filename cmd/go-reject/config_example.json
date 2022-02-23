@@ -1,7 +1,7 @@
 [
   {
     "paths": [
-      "/dir1/dir2/dir3"
+      "D:\\folder1"
     ],
     "mask": {
       "on": true,

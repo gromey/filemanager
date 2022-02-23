@@ -58,13 +58,14 @@ func (r *dirReader) Exec() ([]FileInfo, []FileInfo, error) {
 func readDirectory(root, rel string, mask []string, getHash bool) ([]FileInfo, []FileInfo, error) {
 	dir, err := os.Open(root)
 	if err != nil {
-		return nil, nil, fmt.Errorf("can't open %v: %v", root, err)
+		return nil, nil, fmt.Errorf("can't open %s: %s", root, err)
 	}
 	defer dir.Close()
 
-	files, err := dir.Readdir(-1)
+	var files []os.FileInfo
+	files, err = dir.Readdir(-1)
 	if err != nil {
-		return nil, nil, fmt.Errorf("can't read files in dir %v: %v", root, err)
+		return nil, nil, fmt.Errorf("can't read files in dir %s: %s", root, err)
 	}
 
 	var inMask, outMask []FileInfo
@@ -74,7 +75,8 @@ func readDirectory(root, rel string, mask []string, getHash bool) ([]FileInfo, [
 		abs = filepath.Join(root, file.Name())
 
 		if file.IsDir() {
-			inM, outM, err := readDirectory(abs, filepath.Join(rel, file.Name()), mask, getHash)
+			var inM, outM []FileInfo
+			inM, outM, err = readDirectory(abs, filepath.Join(rel, file.Name()), mask, getHash)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -109,6 +111,7 @@ func readDirectory(root, rel string, mask []string, getHash bool) ([]FileInfo, [
 			})
 		}
 	}
+
 	return inMask, outMask, nil
 }
 
@@ -118,10 +121,12 @@ func computingHash(filename string) (string, error) {
 		return "", err
 	}
 	defer f.Close()
+
 	h := md5.New()
 	if _, err = io.Copy(h, f); err != nil {
 		return "", err
 	}
+
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
@@ -131,5 +136,6 @@ func includedInMask(name string, mask []string) bool {
 			return true
 		}
 	}
+
 	return false
 }

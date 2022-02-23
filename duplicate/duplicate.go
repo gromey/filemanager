@@ -27,7 +27,7 @@ func New(c *Config) *duplicate {
 	return d
 }
 
-func (d *duplicate) Start() ([]Test, error) {
+func (d *duplicate) Start() ([]Repeated, error) {
 	var excluded, included []dirreader.FileInfo
 
 	for _, path := range d.paths {
@@ -41,7 +41,10 @@ func (d *duplicate) Start() ([]Test, error) {
 	}
 
 	if d.details {
-		log.Printf("%d %s\n", len(excluded), "files was excluded by mask.")
+		log.Printf("%d files was excluded by mask.\n", len(excluded))
+		//for _, v := range excluded {
+		//	log.Println(v)
+		//}
 	}
 
 	match := compare(included)
@@ -55,13 +58,14 @@ func (d *duplicate) Start() ([]Test, error) {
 func Run(config string) error {
 	var c []*Config
 
-	err := common.GetConfig(config, c)
+	err := common.GetConfig(config, &c)
 	if err != nil {
 		return err
 	}
 
 	for _, cfg := range c {
-		res, err := New(cfg).Start()
+		var res []Repeated
+		res, err = New(cfg).Start()
 		if err != nil {
 			return err
 		}

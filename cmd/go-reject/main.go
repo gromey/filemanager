@@ -3,11 +3,13 @@ package main
 import (
 	"github.com/gromey/filemanager/reject"
 	"log"
+	"time"
 )
 
 func main() {
-	err := reject.Run("cmd/reject/config.json")
-	if err != nil {
+	start := time.Now()
+	if err := reject.Run("cmd/go-reject/config.json"); err != nil {
 		log.Fatal(err)
 	}
+	log.Printf("%s", time.Since(start))
 }
