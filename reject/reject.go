@@ -60,14 +60,13 @@ func (r *reject) Start() error {
 func Run(config string) error {
 	var c []*Config
 
-	err := common.GetConfig(config, c)
+	err := common.GetConfig(config, &c)
 	if err != nil {
 		return err
 	}
 
 	for _, cfg := range c {
-		err = New(cfg).Start()
-		if err != nil {
+		if err = New(cfg).Start(); err != nil {
 			return err
 		}
 	}

@@ -15,7 +15,7 @@ func GetConfig(config string, v interface{}) error {
 		return fmt.Errorf("can't read config: %s", err)
 	}
 
-	err = json.Unmarshal(data, &v)
+	err = json.Unmarshal(data, v)
 	if err != nil {
 		return fmt.Errorf("can't unmarshal config: %s", err)
 	}
