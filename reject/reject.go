@@ -45,7 +45,7 @@ func (r *reject) Start() error {
 	}
 
 	if r.details {
-		log.Printf("%d %s\n", len(excluded), "files was excluded by mask.")
+		log.Printf("%d files was excluded by mask.\n", len(excluded))
 	}
 
 	for _, fi := range included {
