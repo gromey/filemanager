@@ -11,6 +11,10 @@ import (
 	"strings"
 )
 
+type DirReader interface {
+	Exec() ([]FileInfo, []FileInfo, error)
+}
+
 type FileInfo struct {
 	os.FileInfo
 	PathAbs string
@@ -26,7 +30,7 @@ type dirReader struct {
 	getHash bool
 }
 
-func SetDirReader(root string, mask []string, include, details, getHash bool) *dirReader {
+func New(root string, mask []string, include, details, getHash bool) DirReader {
 	return &dirReader{
 		root:    root,
 		mask:    mask,
@@ -63,8 +67,7 @@ func readDirectory(root, rel string, mask []string, getHash bool) ([]FileInfo, [
 	defer dir.Close()
 
 	var files []os.FileInfo
-	files, err = dir.Readdir(-1)
-	if err != nil {
+	if files, err = dir.Readdir(-1); err != nil {
 		return nil, nil, fmt.Errorf("can't read files in dir %s: %s", root, err)
 	}
 
@@ -76,8 +79,7 @@ func readDirectory(root, rel string, mask []string, getHash bool) ([]FileInfo, [
 
 		if file.IsDir() {
 			var inM, outM []FileInfo
-			inM, outM, err = readDirectory(abs, filepath.Join(rel, file.Name()), mask, getHash)
-			if err != nil {
+			if inM, outM, err = readDirectory(abs, filepath.Join(rel, file.Name()), mask, getHash); err != nil {
 				return nil, nil, err
 			}
 
@@ -88,8 +90,7 @@ func readDirectory(root, rel string, mask []string, getHash bool) ([]FileInfo, [
 		}
 
 		if getHash {
-			resultingHash, err = computingHash(abs)
-			if err != nil {
+			if resultingHash, err = computingHash(abs); err != nil {
 				return nil, nil, fmt.Errorf("can't compute hash for %v: %v", abs, err)
 			}
 		}

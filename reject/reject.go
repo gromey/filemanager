@@ -1,9 +1,10 @@
 package reject
 
 import (
+	"log"
+
 	"github.com/gromey/filemanager/common"
 	"github.com/gromey/filemanager/dirreader"
-	"log"
 )
 
 type reject struct {
@@ -35,7 +36,7 @@ func (r *reject) Start() error {
 	var excluded, included []dirreader.FileInfo
 
 	for _, path := range r.paths {
-		exclude, include, err := dirreader.SetDirReader(path, r.extension, r.include, r.details, false).Exec()
+		exclude, include, err := dirreader.New(path, r.extension, r.include, r.details, false).Exec()
 		if err != nil {
 			return err
 		}

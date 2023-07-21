@@ -3,11 +3,27 @@ package synchronize
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gromey/filemanager/dirreader"
-	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/gromey/filemanager/dirreader"
 )
+
+type Synchronize interface {
+	Start() (res1, res2 map[string]*resolution, msg string, err error)
+}
+
+type Config struct {
+	FirstPath  string `json:"first_path"`
+	SecondPath string `json:"second_path"`
+	Mask       struct {
+		On        bool     `json:"on"`
+		Extension []string `json:"extension"`
+		Include   bool     `json:"include"`
+		Details   bool     `json:"details"`
+	} `json:"mask"`
+	GetHash bool `json:"get_hash"`
+}
 
 type synchronize struct {
 	firstPath  string
@@ -18,7 +34,7 @@ type synchronize struct {
 	getHash    bool
 }
 
-func New(c *Config) *synchronize {
+func New(c *Config) Synchronize {
 	s := &synchronize{
 		firstPath:  c.FirstPath,
 		secondPath: c.SecondPath,
@@ -37,13 +53,11 @@ func New(c *Config) *synchronize {
 func (s *synchronize) Start() (res1, res2 map[string]*resolution, msg string, err error) {
 	var excluded1, included1, excluded2, included2, res []dirreader.FileInfo
 
-	excluded1, included1, err = dirreader.SetDirReader(s.firstPath, s.ext, s.include, s.details, s.getHash).Exec()
-	if err != nil {
+	if excluded1, included1, err = dirreader.New(s.firstPath, s.ext, s.include, s.details, s.getHash).Exec(); err != nil {
 		return
 	}
 
-	excluded2, included2, err = dirreader.SetDirReader(s.secondPath, s.ext, s.include, s.details, s.getHash).Exec()
-	if err != nil {
+	if excluded2, included2, err = dirreader.New(s.secondPath, s.ext, s.include, s.details, s.getHash).Exec(); err != nil {
 		return
 	}
 
@@ -51,8 +65,7 @@ func (s *synchronize) Start() (res1, res2 map[string]*resolution, msg string, er
 		log.Printf("%d files was excluded by mask.\n", len(excluded1)+len(excluded2))
 	}
 
-	res, err = readPreviousResult("result.json")
-	if err != nil && !os.IsNotExist(err) {
+	if res, err = readPreviousResult("result.json"); err != nil && !os.IsNotExist(err) {
 		return
 	} else {
 		msg = "The first synchronization will take place.\n\n"
@@ -62,6 +75,21 @@ func (s *synchronize) Start() (res1, res2 map[string]*resolution, msg string, er
 	res2 = compareFileInfo(res, included2, s.firstPath)
 
 	return
+}
+
+func readPreviousResult(filename string) ([]dirreader.FileInfo, error) {
+	var res []dirreader.FileInfo
+
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = json.Unmarshal(data, &res); err != nil {
+		return nil, fmt.Errorf("can't unmarshal %s: %s", filename, err)
+	}
+
+	return res, nil
 }
 
 //	match, dfr := CompareResolution(res1, res2)
@@ -100,21 +128,6 @@ func (s *synchronize) Start() (res1, res2 map[string]*resolution, msg string, er
 //	//	}
 //	return nil
 //}
-
-func readPreviousResult(filename string) ([]dirreader.FileInfo, error) {
-	var res []dirreader.FileInfo
-
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = json.Unmarshal(data, &res); err != nil {
-		return nil, fmt.Errorf("can't unmarshal %s: %s", filename, err)
-	}
-
-	return res, nil
-}
 
 //// TODO Refactor it func
 //func (s *synchronize) writeResult(rd dirreader.DirReader) error {

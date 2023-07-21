@@ -2,10 +2,11 @@ package synchronize
 
 import (
 	"fmt"
-	"github.com/gromey/filemanager/dirreader"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/gromey/filemanager/dirreader"
 )
 
 type base struct {
@@ -14,77 +15,92 @@ type base struct {
 }
 
 func (b *base) Apply() error {
-	r, err := os.Open(b.fiSrc.PathAbs)
+	f, err := os.Open(b.fiSrc.PathAbs)
 	if err != nil {
 		return fmt.Errorf("could not open %s: %s", b.fiSrc.PathAbs, err)
 	}
-	defer r.Close()
-	if fi, err := r.Stat(); err == nil && fi.IsDir() {
+	defer f.Close()
+
+	var fi os.FileInfo
+	if fi, err = f.Stat(); err == nil && fi.IsDir() {
 		return nil
 	}
+
 	path := filepath.Dir(b.fiDst.PathAbs)
 	if err = os.MkdirAll(path, 0755); err != nil {
 		return fmt.Errorf("could not create Dir %s: %s", path, err)
 	}
+
+	if err = b.createAndCopy(f); err != nil {
+		return err
+	}
+
+	if err = os.Chtimes(b.fiDst.PathAbs, b.fiSrc.ModTime(), b.fiSrc.ModTime()); err != nil {
+		return fmt.Errorf("could not change ModTime %s: %s", b.fiDst.PathAbs, err)
+	}
+
+	return nil
+}
+
+func (b *base) createAndCopy(f *os.File) error {
 	w, err := os.Create(b.fiDst.PathAbs)
 	if err != nil {
 		return fmt.Errorf("could not create file %s: %s", b.fiDst.PathAbs, err)
 	}
-	defer w.Close()
-	if _, err = io.Copy(w, r); err != nil {
+
+	defer func() {
+		if err = w.Close(); err != nil {
+			err = fmt.Errorf("could not close file %s: %s", b.fiDst.PathAbs, err)
+		}
+	}()
+
+	if _, err = io.Copy(w, f); err != nil {
 		_ = os.Remove(b.fiDst.PathAbs)
 		return fmt.Errorf("could not copy file %s: %s", b.fiDst.PathAbs, err)
 	}
-	err = w.Close()
-	if err != nil {
-		return fmt.Errorf("could not close file %s: %s", b.fiDst.PathAbs, err)
-	}
-	if err = os.Chtimes(b.fiDst.PathAbs, b.fiSrc.ModTime(), b.fiSrc.ModTime()); err != nil {
-		return fmt.Errorf("could not change ModTime %s: %s", b.fiDst.PathAbs, err)
-	}
-	return nil
+
+	return err
 }
 
-func (b *base) String() string {
-	return fmt.Sprintf("%q\t%v\t%q\n\t%v %v\n\t%v %q\n\t%v %q",
-		b.fiSrc.PathAbs, "match", b.fiDst.PathAbs, "Size", b.fiDst.Size,
-		"ModTime", b.fiDst.ModTime, "Hash", b.fiDst.Hash)
-}
+//func (b *base) String() string {
+//	return fmt.Sprintf("%q\t%v\t%q\n\t%v %v\n\t%v %q\n\t%v %q",
+//		b.fiSrc.PathAbs, "match", b.fiDst.PathAbs, "Size", b.fiDst.Size,
+//		"ModTime", b.fiDst.ModTime, "Hash", b.fiDst.Hash)
+//}
 
 type Create struct {
 	base
 }
 
-func (c *Create) String() string {
-	return fmt.Sprintf("%q\t%v\t%q\t%q\t%q",
-		c.fiSrc.Name, c.fiSrc.Size, c.fiSrc.ModTime, "the file will be creating in", c.fiDst.PathAbs)
-}
+//func (c *Create) String() string {
+//	return fmt.Sprintf("%q\t%v\t%q\t%q\t%q",
+//		c.fiSrc.Name, c.fiSrc.Size, c.fiSrc.ModTime, "the file will be creating in", c.fiDst.PathAbs)
+//}
 
 type Replace struct {
 	base
 }
 
-func (r *Replace) String() string {
-	return fmt.Sprintf("%q\t%v\t%q\t%q\t%q",
-		r.fiSrc.Name, r.fiSrc.Size, r.fiSrc.ModTime, "the file will be replacing", r.fiDst.PathAbs)
-}
+//func (r *Replace) String() string {
+//	return fmt.Sprintf("%q\t%v\t%q\t%q\t%q",
+//		r.fiSrc.Name, r.fiSrc.Size, r.fiSrc.ModTime, "the file will be replacing", r.fiDst.PathAbs)
+//}
 
 type Delete struct {
 	base
 }
 
 func (d *Delete) Apply() error {
-	err := os.Remove(d.fiDst.PathAbs)
-	if err != nil {
+	if err := os.Remove(d.fiDst.PathAbs); err != nil {
 		return fmt.Errorf("could not delete file %s: %s", d.fiDst.PathAbs, err)
 	}
 	return nil
 }
 
-func (d *Delete) String() string {
-	return fmt.Sprintf("%q\t%v\t%q\tthe file will be deleting\t%s",
-		d.fiDst.Name(), d.fiDst.Size(), d.fiDst.ModTime(), d.fiDst.PathAbs)
-}
+//func (d *Delete) String() string {
+//	return fmt.Sprintf("%q\t%v\t%q\tthe file will be deleting\t%s",
+//		d.fiDst.Name(), d.fiDst.Size(), d.fiDst.ModTime(), d.fiDst.PathAbs)
+//}
 
 func compareFileInfo(res, included []dirreader.FileInfo, abs string) map[string]*resolution {
 	m1, m2 := toMap(res), toMap(included)
@@ -114,6 +130,14 @@ func compareFileInfo(res, included []dirreader.FileInfo, abs string) map[string]
 		}
 	}
 
+	return m
+}
+
+func toMap(arr []dirreader.FileInfo) map[string]dirreader.FileInfo {
+	m := make(map[string]dirreader.FileInfo, len(arr))
+	for _, fi := range arr {
+		m[filepath.Join(fi.PathRel, fi.Name())] = fi
+	}
 	return m
 }
 
@@ -237,12 +261,4 @@ func question(res1, res2 resolution) Action {
 		fmt.Println("canceled")
 		return nil
 	}
-}
-
-func toMap(arr []dirreader.FileInfo) map[string]dirreader.FileInfo {
-	m := make(map[string]dirreader.FileInfo, len(arr))
-	for _, fi := range arr {
-		m[filepath.Join(fi.PathRel, fi.Name())] = fi
-	}
-	return m
 }

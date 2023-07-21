@@ -1,7 +1,7 @@
 package synchronize
 
 const (
-	actMatch = act(iota)
+	actMatch = act(iota) + 1
 	actCreate
 	actReplace
 	actDelete

@@ -1,19 +1,29 @@
 package duplicate
 
 import (
-	"github.com/gromey/filemanager/common"
-	"github.com/gromey/filemanager/dirreader"
 	"log"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/gromey/filemanager/dirreader"
 )
 
-type duplicate struct {
-	paths     []string
-	extension []string
-	include   bool
-	details   bool
+type Duplicate interface {
+	Start() ([]Repeated, error)
 }
 
-func New(c *Config) *duplicate {
+type Config struct {
+	Paths []string `json:"paths"`
+	Mask  struct {
+		On        bool     `json:"on"`
+		Extension []string `json:"extension"`
+		Include   bool     `json:"include"`
+		Details   bool     `json:"details"`
+	} `json:"mask"`
+}
+
+func New(c *Config) Duplicate {
 	d := &duplicate{
 		paths: c.Paths,
 	}
@@ -27,11 +37,25 @@ func New(c *Config) *duplicate {
 	return d
 }
 
+type Repeated struct {
+	Hash    string
+	Size    int64
+	ModTime time.Time
+	Paths   []string
+}
+
+type duplicate struct {
+	paths     []string
+	extension []string
+	include   bool
+	details   bool
+}
+
 func (d *duplicate) Start() ([]Repeated, error) {
 	var excluded, included []dirreader.FileInfo
 
 	for _, path := range d.paths {
-		exclude, include, err := dirreader.SetDirReader(path, d.extension, d.include, d.details, true).Exec()
+		exclude, include, err := dirreader.New(path, d.extension, d.include, d.details, true).Exec()
 		if err != nil {
 			return nil, err
 		}
@@ -55,25 +79,46 @@ func (d *duplicate) Start() ([]Repeated, error) {
 	return match, nil
 }
 
-func Run(config string) error {
-	var c []*Config
+func compare(arr []dirreader.FileInfo) []Repeated {
+	m := make(map[string]dirreader.FileInfo, len(arr))
+	match := make(map[string]Repeated)
 
-	err := common.GetConfig(config, &c)
-	if err != nil {
-		return err
+	for _, fi := range arr {
+		if fiDuplicate, ok := m[fi.Hash]; !ok {
+			m[fi.Hash] = fi
+		} else {
+			var dup Repeated
+			if dup, ok = match[fi.Hash]; !ok {
+				match[fi.Hash] = Repeated{
+					Hash:    fi.Hash,
+					Size:    fi.Size(),
+					ModTime: fi.ModTime(),
+					Paths: []string{
+						strings.TrimPrefix(fi.PathAbs, "/"),
+						strings.TrimPrefix(fiDuplicate.PathAbs, "/"),
+					},
+				}
+			} else {
+				dup.Paths = append(dup.Paths, strings.TrimPrefix(fi.PathAbs, "/"))
+				match[fi.Hash] = dup
+			}
+		}
 	}
 
-	for _, cfg := range c {
-		var res []Repeated
-		res, err = New(cfg).Start()
-		if err != nil {
-			return err
-		}
+	res := make([]Repeated, len(match))
+	i := 0
+	for _, dup := range match {
+		sort.Slice(dup.Paths, func(i, j int) bool {
+			return dup.Paths[i] < dup.Paths[j]
+		})
 
-		for _, v := range res {
-			log.Println(v)
-		}
+		res[i] = dup
+		i++
 	}
 
-	return nil
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Hash < res[j].Hash
+	})
+
+	return res
 }

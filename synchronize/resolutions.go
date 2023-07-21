@@ -2,8 +2,9 @@ package synchronize
 
 import (
 	"fmt"
-	"github.com/gromey/filemanager/dirreader"
 	"path/filepath"
+
+	"github.com/gromey/filemanager/dirreader"
 )
 
 type resolution struct {
@@ -11,7 +12,7 @@ type resolution struct {
 	base
 }
 
-func (r resolution) String() string {
+func (r *resolution) String() string {
 	var s string
 	switch r.action {
 	case actMatch:
