@@ -1,48 +1,55 @@
 package synchronize
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/gromey/filemanager/dirreader"
 )
 
 type Synchronize interface {
-	Start() (res1, res2 map[string]*resolution, msg string, err error)
+	Start() (match, difference Resolutions, err error)
+	WriteResult() error
 }
 
 type Config struct {
-	FirstPath  string `json:"first_path"`
-	SecondPath string `json:"second_path"`
-	Mask       struct {
-		On        bool     `json:"on"`
-		Extension []string `json:"extension"`
-		Include   bool     `json:"include"`
-		Details   bool     `json:"details"`
+	PathA string `json:"path_A"`
+	PathB string `json:"path_B"`
+	Mask  struct {
+		On         bool     `json:"on"`
+		Extensions []string `json:"extensions"`
+		Include    bool     `json:"include"`
+		Details    bool     `json:"details"`
 	} `json:"mask"`
 	GetHash bool `json:"get_hash"`
 }
 
 type synchronize struct {
-	firstPath  string
-	secondPath string
-	ext        []string
+	pathA      string
+	pathB      string
+	extensions []string
 	include    bool
 	details    bool
 	getHash    bool
+
+	result string
 }
 
 func New(c *Config) Synchronize {
 	s := &synchronize{
-		firstPath:  c.FirstPath,
-		secondPath: c.SecondPath,
-		getHash:    c.GetHash,
+		pathA:   c.PathA,
+		pathB:   c.PathB,
+		getHash: c.GetHash,
 	}
 
 	if c.Mask.On {
-		s.ext = c.Mask.Extension
+		s.extensions = c.Mask.Extensions
 		s.include = c.Mask.Include
 		s.details = c.Mask.Details
 	}
@@ -50,29 +57,32 @@ func New(c *Config) Synchronize {
 	return s
 }
 
-func (s *synchronize) Start() (res1, res2 map[string]*resolution, msg string, err error) {
-	var excluded1, included1, excluded2, included2, res []dirreader.FileInfo
-
-	if excluded1, included1, err = dirreader.New(s.firstPath, s.ext, s.include, s.details, s.getHash).Exec(); err != nil {
+func (s *synchronize) Start() (match, difference Resolutions, err error) {
+	if s.result, err = resultName(s.pathA, s.pathB); err != nil {
 		return
 	}
 
-	if excluded2, included2, err = dirreader.New(s.secondPath, s.ext, s.include, s.details, s.getHash).Exec(); err != nil {
+	var exclA, inclA, exclB, inclB, previous []dirreader.FileInfo
+
+	if previous, err = readPreviousResult(s.result); err != nil && !os.IsNotExist(err) {
+		return
+	} else if os.IsNotExist(err) {
+		//msg = "The first synchronization will take place.\n\n"
+	}
+
+	if exclA, inclA, err = dirreader.New(s.pathA, s.extensions, s.include, s.getHash).Exec(); err != nil {
+		return
+	}
+
+	if exclB, inclB, err = dirreader.New(s.pathB, s.extensions, s.include, s.getHash).Exec(); err != nil {
 		return
 	}
 
 	if s.details {
-		log.Printf("%d files was excluded by mask.\n", len(excluded1)+len(excluded2))
+		log.Printf("%d files was excluded by mask.\n", len(exclA)+len(exclB))
 	}
 
-	if res, err = readPreviousResult("result.json"); err != nil && !os.IsNotExist(err) {
-		return
-	} else {
-		msg = "The first synchronization will take place.\n\n"
-	}
-
-	res1 = compareFileInfo(res, included1, s.secondPath)
-	res2 = compareFileInfo(res, included2, s.firstPath)
+	match, difference = s.compareFileInfo(previous, inclA, inclB)
 
 	return
 }
@@ -80,74 +90,54 @@ func (s *synchronize) Start() (res1, res2 map[string]*resolution, msg string, er
 func readPreviousResult(filename string) ([]dirreader.FileInfo, error) {
 	var res []dirreader.FileInfo
 
-	data, err := os.ReadFile(filename)
+	file, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = json.Unmarshal(data, &res); err != nil {
-		return nil, fmt.Errorf("can't unmarshal %s: %s", filename, err)
+	if err = json.Unmarshal(file, &res); err != nil {
+		return nil, fmt.Errorf("can't unmarshal %s: %w", filename, err)
 	}
 
 	return res, nil
 }
 
-//	match, dfr := CompareResolution(res1, res2)
-//	// return match, dfr, err
-//
-//	//	// TODO Move to other func
-//	//	for _, action := range match {
-//	//		fmt.Println(action)
-//	//	}
-//	//	if len(dfr) == 0 {
-//	//		fmt.Printf("No files for synchronization\n\n")
-//	//		return nil
-//	//	}
-//	//	for _, action := range dfr {
-//	//		fmt.Println(action)
-//	//	}
-//	//	fmt.Printf("Please enter \"Y\" for synchronization " +
-//	//		"or enter any other character to cancel synchronization\n\n")
-//	//	var ask string
-//	//	fmt.Scanln(&ask)
-//	//	if ask == "y" || ask == "Y" {
-//	//		for _, action := range dfr {
-//	//			err := action.Apply()
-//	//			if err != nil {
-//	//				return err
-//	//			}
-//	//		}
-//	//		fmt.Printf("Synchronize is done\n\n")
-//	//
-//	//		err = s.writeResult(*dir1)
-//	//		if err != nil {
-//	//			return err
-//	//		}
-//	//	} else {
-//	//		fmt.Printf("Synchronize canceled by user\n\n")
-//	//	}
-//	return nil
-//}
+func (s *synchronize) WriteResult() error {
+	fmt.Println("Write result file.")
 
-//// TODO Refactor it func
-//func (s *synchronize) writeResult(rd dirreader.DirReader) error {
-//	fmt.Println("Write result file.")
-//	ex, in, err := rd.ReadDirectory()
-//	if err != nil {
-//		return err
-//	}
-//	if s.config.Mask.include {
-//		ex, in = in, ex
-//	}
-//	w, err := os.Create("result.json")
-//	if err != nil {
-//		return fmt.Errorf("could not create file result.json: %v", err)
-//	}
-//	defer w.Close()
-//	err = json.NewEncoder(w).Encode(in)
-//	if err != nil {
-//		return fmt.Errorf("could not encode file result.json: %v", err)
-//	}
-//	fmt.Println("Done.")
-//	return nil
-//}
+	_, incl, err := dirreader.New(s.pathA, s.extensions, s.include, s.getHash).Exec()
+	if err != nil {
+		return err
+	}
+
+	path := filepath.Dir(s.result)
+	if err = os.MkdirAll(path, 0755); err != nil {
+		return fmt.Errorf("could not create Dir %s: %w", path, err)
+	}
+
+	var file *os.File
+	if file, err = os.Create(s.result); err != nil {
+		return fmt.Errorf("could not create result file: %v", err)
+	}
+	defer func() { _ = file.Close() }()
+
+	enc := json.NewEncoder(file)
+	enc.SetIndent("", "\t")
+	if err = enc.Encode(incl); err != nil {
+		return fmt.Errorf("could not encode result: %v", err)
+	}
+
+	fmt.Println("Done.")
+	return nil
+}
+
+func resultName(pathA, pathB string) (string, error) {
+	h := md5.New()
+	if _, err := io.WriteString(h, pathA); err != nil {
+		return "", fmt.Errorf("result name: %w", err)
+	}
+	if _, err := io.WriteString(h, pathB); err != nil {
+		return "", fmt.Errorf("result name: %w", err)
+	}
+	return filepath.Join(".", "results", hex.EncodeToString(h.Sum(nil))), nil
+}

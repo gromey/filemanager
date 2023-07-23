@@ -8,12 +8,12 @@ import (
 )
 
 type reject struct {
-	paths     []string
-	extension []string
-	include   bool
-	details   bool
-	delete    []string
-	space     []string
+	paths      []string
+	extensions []string
+	include    bool
+	details    bool
+	delete     []string
+	space      []string
 }
 
 func New(c *Config) *reject {
@@ -24,7 +24,7 @@ func New(c *Config) *reject {
 	}
 
 	if c.Mask.On {
-		r.extension = c.Mask.Extension
+		r.extensions = c.Mask.Extensions
 		r.include = c.Mask.Include
 		r.details = c.Mask.Details
 	}
@@ -36,7 +36,7 @@ func (r *reject) Start() error {
 	var excluded, included []dirreader.FileInfo
 
 	for _, path := range r.paths {
-		exclude, include, err := dirreader.New(path, r.extension, r.include, r.details, false).Exec()
+		exclude, include, err := dirreader.New(path, r.extensions, r.include, false).Exec()
 		if err != nil {
 			return err
 		}
@@ -61,7 +61,7 @@ func (r *reject) Start() error {
 func Run(config string) error {
 	var c []*Config
 
-	err := common.GetConfig(config, &c)
+	err := common.ReadConfig(config, &c)
 	if err != nil {
 		return err
 	}

@@ -9,14 +9,18 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 type DirReader interface {
-	Exec() ([]FileInfo, []FileInfo, error)
+	Exec() (excl []FileInfo, incl []FileInfo, err error)
 }
 
 type FileInfo struct {
-	os.FileInfo
+	Name    string
+	Size    int64
+	ModTime time.Time
+	IsDir   bool
 	PathAbs string
 	PathRel string
 	Hash    string
@@ -30,45 +34,41 @@ type dirReader struct {
 	getHash bool
 }
 
-func New(root string, mask []string, include, details, getHash bool) DirReader {
+func New(root string, mask []string, include, getHash bool) DirReader {
 	return &dirReader{
 		root:    root,
 		mask:    mask,
 		include: include,
-		details: details,
 		getHash: getHash,
 	}
 }
 
-func (r *dirReader) Exec() ([]FileInfo, []FileInfo, error) {
-	ex, in, err := readDirectory(r.root, "", r.mask, r.getHash)
-	if err != nil {
-		return nil, nil, err
+func (r *dirReader) Exec() (excl []FileInfo, incl []FileInfo, err error) {
+	if excl, incl, err = readDirectory(r.root, "", r.mask, r.getHash); err != nil {
+		return
 	}
 
 	if r.include {
-		ex, in = in, ex
+		excl, incl = incl, excl
 	}
 
-	if r.details {
-		sort.Slice(ex, func(i, j int) bool {
-			return ex[i].PathAbs < ex[j].PathAbs
-		})
-	}
+	sort.Slice(incl, func(i, j int) bool {
+		return incl[i].PathAbs < incl[j].PathAbs
+	})
 
-	return ex, in, nil
+	return
 }
 
 func readDirectory(root, rel string, mask []string, getHash bool) ([]FileInfo, []FileInfo, error) {
 	dir, err := os.Open(root)
 	if err != nil {
-		return nil, nil, fmt.Errorf("can't open %s: %s", root, err)
+		return nil, nil, fmt.Errorf("read directory: %w", err)
 	}
-	defer dir.Close()
+	defer func() { _ = dir.Close() }()
 
 	var files []os.FileInfo
 	if files, err = dir.Readdir(-1); err != nil {
-		return nil, nil, fmt.Errorf("can't read files in dir %s: %s", root, err)
+		return nil, nil, fmt.Errorf("can't read files in dir %s: %w", root, err)
 	}
 
 	var inMask, outMask []FileInfo
@@ -91,25 +91,24 @@ func readDirectory(root, rel string, mask []string, getHash bool) ([]FileInfo, [
 
 		if getHash {
 			if resultingHash, err = computingHash(abs); err != nil {
-				return nil, nil, fmt.Errorf("can't compute hash for %v: %v", abs, err)
+				return nil, nil, fmt.Errorf("can't compute hash for %s: %w", abs, err)
 			}
 		}
 
+		fi := FileInfo{
+			Name:    file.Name(),
+			Size:    file.Size(),
+			ModTime: file.ModTime(),
+			IsDir:   file.IsDir(),
+			PathAbs: abs,
+			PathRel: rel,
+			Hash:    resultingHash,
+		}
+
 		if includedInMask(file.Name(), mask) {
-			inMask = append(inMask, FileInfo{
-				FileInfo: file,
-				PathAbs:  abs,
-				PathRel:  rel,
-				Hash:     resultingHash,
-			})
-			continue
+			inMask = append(inMask, fi)
 		} else {
-			outMask = append(outMask, FileInfo{
-				FileInfo: file,
-				PathAbs:  abs,
-				PathRel:  rel,
-				Hash:     resultingHash,
-			})
+			outMask = append(outMask, fi)
 		}
 	}
 
@@ -117,14 +116,14 @@ func readDirectory(root, rel string, mask []string, getHash bool) ([]FileInfo, [
 }
 
 func computingHash(filename string) (string, error) {
-	f, err := os.Open(filename)
+	file, err := os.Open(filename)
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = file.Close() }()
 
 	h := md5.New()
-	if _, err = io.Copy(h, f); err != nil {
+	if _, err = io.Copy(h, file); err != nil {
 		return "", err
 	}
 
@@ -137,6 +136,5 @@ func includedInMask(name string, mask []string) bool {
 			return true
 		}
 	}
-
 	return false
 }

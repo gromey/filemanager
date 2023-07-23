@@ -16,10 +16,10 @@ type Duplicate interface {
 type Config struct {
 	Paths []string `json:"paths"`
 	Mask  struct {
-		On        bool     `json:"on"`
-		Extension []string `json:"extension"`
-		Include   bool     `json:"include"`
-		Details   bool     `json:"details"`
+		On         bool     `json:"on"`
+		Extensions []string `json:"extensions"`
+		Include    bool     `json:"include"`
+		Details    bool     `json:"details"`
 	} `json:"mask"`
 }
 
@@ -29,7 +29,7 @@ func New(c *Config) Duplicate {
 	}
 
 	if c.Mask.On {
-		d.extension = c.Mask.Extension
+		d.extensions = c.Mask.Extensions
 		d.include = c.Mask.Include
 		d.details = c.Mask.Details
 	}
@@ -45,17 +45,17 @@ type Repeated struct {
 }
 
 type duplicate struct {
-	paths     []string
-	extension []string
-	include   bool
-	details   bool
+	paths      []string
+	extensions []string
+	include    bool
+	details    bool
 }
 
 func (d *duplicate) Start() ([]Repeated, error) {
 	var excluded, included []dirreader.FileInfo
 
 	for _, path := range d.paths {
-		exclude, include, err := dirreader.New(path, d.extension, d.include, d.details, true).Exec()
+		exclude, include, err := dirreader.New(path, d.extensions, d.include, true).Exec()
 		if err != nil {
 			return nil, err
 		}
@@ -66,17 +66,13 @@ func (d *duplicate) Start() ([]Repeated, error) {
 
 	if d.details {
 		log.Printf("%d files was excluded by mask.\n", len(excluded))
-		//for _, v := range excluded {
-		//	log.Println(v)
-		//}
 	}
 
-	match := compare(included)
-	if len(match) == 0 {
-		return nil, nil
+	if match := compare(included); len(match) != 0 {
+		return match, nil
 	}
 
-	return match, nil
+	return nil, nil
 }
 
 func compare(arr []dirreader.FileInfo) []Repeated {
@@ -91,8 +87,8 @@ func compare(arr []dirreader.FileInfo) []Repeated {
 			if dup, ok = match[fi.Hash]; !ok {
 				match[fi.Hash] = Repeated{
 					Hash:    fi.Hash,
-					Size:    fi.Size(),
-					ModTime: fi.ModTime(),
+					Size:    fi.Size,
+					ModTime: fi.ModTime,
 					Paths: []string{
 						strings.TrimPrefix(fi.PathAbs, "/"),
 						strings.TrimPrefix(fiDuplicate.PathAbs, "/"),

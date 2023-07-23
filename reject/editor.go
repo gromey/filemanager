@@ -2,14 +2,15 @@ package reject
 
 import (
 	"fmt"
-	"github.com/gromey/filemanager/dirreader"
 	"os"
 	"strings"
+
+	"github.com/gromey/filemanager/dirreader"
 )
 
 func (r *reject) nameEditor(fi dirreader.FileInfo) error {
-	path := strings.Trim(fi.PathAbs, fi.Name())
-	name := fi.Name()
+	path := strings.Trim(fi.PathAbs, fi.Name)
+	name := fi.Name
 
 	for _, str := range r.delete {
 		name = strings.Replace(name, str, "", 1)

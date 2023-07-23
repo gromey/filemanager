@@ -1,8 +1,11 @@
 package main
 
+import (
+	"log"
+)
+
 func main() {
-	//err := synchronise.Run("cmd/go-synchronise/config.json")
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
+	if err := startInTerminal(); err != nil {
+		log.Fatal(err)
+	}
 }

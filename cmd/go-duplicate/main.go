@@ -19,7 +19,7 @@ func main() {
 func run(config string) error {
 	var c []*duplicate.Config
 
-	if err := common.GetConfig(config, &c); err != nil {
+	if err := common.ReadConfig(config, &c); err != nil {
 		return err
 	}
 

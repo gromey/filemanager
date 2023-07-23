@@ -7,9 +7,62 @@ import (
 	"github.com/gromey/filemanager/dirreader"
 )
 
+type Resolution interface {
+	Apply() error
+	String() string
+}
+
+type Resolutions map[string]Resolution
+
+func makeResolution(action action, fiSrc, fiDst dirreader.FileInfo) *resolution {
+	return &resolution{
+		action: action,
+		base:   &base{fiSrc: fiSrc, fiDst: fiDst},
+	}
+}
+
+func makeResolutionMatch(fiSrc, fiDst dirreader.FileInfo) *resolution {
+	return makeResolution(actMatch, fiSrc, fiDst)
+}
+
+func makeResolutionCreate(fiSrc dirreader.FileInfo, abs, relName string) *resolution {
+	return makeResolution(actCreate, fiSrc, dirreader.FileInfo{PathAbs: filepath.Join(abs, relName)})
+}
+
+func makeResolutionReplace(fiSrc, fiDst dirreader.FileInfo) *resolution {
+	return makeResolution(actReplace, fiSrc, fiDst)
+}
+
+func makeResolutionRemove(fiSrc dirreader.FileInfo, abs, relName string) *resolution {
+	return makeResolution(actRemove, fiSrc, dirreader.FileInfo{PathAbs: filepath.Join(abs, relName)})
+}
+
+func makeResolutionQuestion(fiSrc, fiDst dirreader.FileInfo) *resolution {
+	return makeResolution(actQuestion, fiSrc, fiDst)
+}
+
 type resolution struct {
-	action act
-	base
+	action action
+	*base
+}
+
+func (r *resolution) Apply() error {
+	var a applier
+	switch r.action {
+	case actMatch:
+		a = &match{base: r.base}
+	case actCreate:
+		a = &create{base: r.base}
+	case actReplace:
+		a = &replace{base: r.base}
+	case actRemove:
+		a = &remove{base: r.base}
+	case actQuestion:
+		a = &question{base: r.base}
+	default:
+		return nil
+	}
+	return a.apply()
 }
 
 func (r *resolution) String() string {
@@ -18,88 +71,15 @@ func (r *resolution) String() string {
 	case actMatch:
 		s = fmt.Sprintf("%s has not been changed", r.fiSrc.PathAbs)
 	case actCreate:
-		s = fmt.Sprintf("%s was created, time %q", r.fiSrc.PathAbs, r.fiSrc.ModTime())
+		s = fmt.Sprintf("%s was created, time %q", r.fiDst.PathAbs, r.fiSrc.ModTime)
 	case actReplace:
-		s = fmt.Sprintf("%s has been changed %q", r.fiSrc.PathAbs, r.fiSrc.ModTime())
-	case actDelete:
-		s = fmt.Sprintf("%s has been deleted", r.fiSrc.PathAbs)
-	case actProblem:
-		s = fmt.Sprintf("%s has time earlier than the previous synchronization", r.fiSrc.PathAbs)
+		s = fmt.Sprintf("%s has been changed %q", r.fiDst.PathAbs, r.fiSrc.ModTime)
+	case actRemove:
+		s = fmt.Sprintf("%s has been deleted", r.fiDst.PathAbs)
+	case actQuestion:
+		s = fmt.Sprintf("%s conflicts with %s", r.fiSrc.PathAbs, r.fiDst.PathAbs)
 	default:
 		return "Unknown resolution"
 	}
 	return s
-}
-
-func (r *resolution) createAction() Action {
-	var action Action
-	switch r.action {
-	case actMatch:
-		action = &r.base
-	case actCreate:
-		action = &Create{r.base}
-	case actReplace:
-		action = &Replace{r.base}
-	case actDelete:
-		action = &Delete{r.base}
-	}
-	return action
-}
-
-func makeResolutionMatch(fiSrc, fiDst dirreader.FileInfo) *resolution {
-	return &resolution{
-		action: actMatch,
-		base: base{
-			fiSrc: fiSrc,
-			fiDst: fiDst,
-		},
-	}
-}
-
-func makeResolutionCreate(fiSrc dirreader.FileInfo, abs, relName string) *resolution {
-	return &resolution{
-		action: actCreate,
-		base: base{
-			fiSrc: fiSrc,
-			fiDst: dirreader.FileInfo{
-				PathAbs: filepath.Join(abs, relName),
-			},
-		},
-	}
-}
-
-func makeResolutionReplace(fiSrc dirreader.FileInfo, abs, relName string) *resolution {
-	return &resolution{
-		action: actReplace,
-		base: base{
-			fiSrc: fiSrc,
-			fiDst: dirreader.FileInfo{
-				PathAbs: filepath.Join(abs, relName),
-			},
-		},
-	}
-}
-
-func makeResolutionDelete(fiSrc dirreader.FileInfo, abs, relName string) *resolution {
-	return &resolution{
-		action: actDelete,
-		base: base{
-			fiSrc: fiSrc,
-			fiDst: dirreader.FileInfo{
-				PathAbs: filepath.Join(abs, relName),
-			},
-		},
-	}
-}
-
-func makeResolutionProblem(fiSrc dirreader.FileInfo, abs, relName string) *resolution {
-	return &resolution{
-		action: actProblem,
-		base: base{
-			fiSrc: fiSrc,
-			fiDst: dirreader.FileInfo{
-				PathAbs: filepath.Join(abs, relName),
-			},
-		},
-	}
 }
